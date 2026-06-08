@@ -1,0 +1,211 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold">TechPerú</span>
+
+    <div class="navbar-nav">
+      <a class="nav-link" href="/inicio">Inicio</a>
+
+      <a *ngIf="rol === 'administrador'" class="nav-link" href="/registro">
+        Registro
+      </a>
+
+      <a *ngIf="rol === 'administrador'" class="nav-link active" href="/mantenimiento">
+        Productos
+      </a>
+
+      <a class="nav-link" href="/clientes">Clientes</a>
+      <a class="nav-link" href="/ventas">Ventas</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4" style="background-color: #f1f3f5; min-height: 100vh">
+  <h1 class="fw-bold mb-4" style="font-size: 1.4rem; color: #1a3a5c">Registro de Productos</h1>
+
+  <div *ngIf="mensaje" class="alert alert-info d-flex justify-content-between align-items-center">
+    <span>{{ mensaje }}</span>
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <div class="card border-0 mb-4 shadow-sm">
+    <div class="card-header text-white" style="background: #1a3a5c">
+      {{ idProductoEditando ? 'Modificar Producto' : 'Adicionar Producto' }}
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Nombre</label>
+          <input class="form-control" [(ngModel)]="nombre" name="nombre" />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Marca</label>
+          <input class="form-control" [(ngModel)]="marca" name="marca" />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Modelo</label>
+          <input class="form-control" [(ngModel)]="modelo" name="modelo" />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Tipo Switch</label>
+          <input class="form-control" [(ngModel)]="tipo_switch" name="tipo_switch" />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Tipo Layout</label>
+          <input class="form-control" [(ngModel)]="tipo_layout" name="tipo_layout" />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Precio</label>
+          <input type="number" class="form-control" [(ngModel)]="precio" name="precio" />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Estado</label>
+          <select class="form-select" [(ngModel)]="estado" name="estado">
+            <option value="Disponible">Disponible</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Stock Actual</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="stock_actual"
+            name="stock_actual"
+          />
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Stock Mínimo</label>
+          <input
+            type="number"
+            class="form-control"
+            [(ngModel)]="stock_minimo"
+            name="stock_minimo"
+          />
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-primary" (click)="guardar()">
+          {{ idProductoEditando ? 'Guardar Cambios' : 'Registrar Producto' }}
+        </button>
+
+        <button class="btn btn-secondary" type="button" (click)="limpiarFormulario()">
+          Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 mb-4 shadow-sm">
+    <div class="card-header text-white" style="background: #1a3a5c">
+      Consulta usando una tabla: Productos
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Switch</th>
+            <th>Layout</th>
+            <th>Precio</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let producto of productos">
+            <td>{{ producto.id_producto }}</td>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.marca }}</td>
+            <td>{{ producto.modelo }}</td>
+            <td>{{ producto.tipo_switch }}</td>
+            <td>{{ producto.tipo_layout }}</td>
+            <td>{{ producto.precio }}</td>
+            <td>{{ producto.estado }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header text-white" style="background: #1a3a5c">
+      Consulta usando dos tablas: Producto + Inventario
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Producto</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Stock</th>
+            <th>Stock Mínimo</th>
+            <th>Actualización</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let producto of productosInventario">
+            <td>{{ producto.id_producto }}</td>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.marca }}</td>
+            <td>{{ producto.modelo }}</td>
+            <td>{{ producto.stock_actual }}</td>
+            <td>{{ producto.stock_minimo }}</td>
+            <td>{{ producto.fecha_actualizacion | date: 'yyyy-MM-dd' }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.bg-success]="producto.estado === 'Disponible'"
+                [class.bg-secondary]="producto.estado !== 'Disponible'"
+              >
+                {{ producto.estado }}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-warning" (click)="editar(producto)">Editar</button>
+
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="eliminarLogico(producto.id_producto)"
+                >
+                  Cambiar Estado
+                </button>
+
+                <button
+                  class="btn btn-sm btn-danger"
+                  (click)="eliminarFisico(producto.id_producto)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="productosInventario.length === 0">
+            <td colspan="9" class="text-center text-muted py-4">Sin productos registrados</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

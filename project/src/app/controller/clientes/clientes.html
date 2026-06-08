@@ -1,0 +1,181 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold">TechPerú</span>
+
+    <div class="navbar-nav">
+      <a class="nav-link" href="/inicio">Inicio</a>
+
+      <a *ngIf="rol === 'administrador'" class="nav-link" href="/registro">
+        Registro
+      </a>
+
+      <a *ngIf="rol === 'administrador'" class="nav-link" href="/mantenimiento">
+        Productos
+      </a>
+
+      <a class="nav-link active" href="/clientes">Clientes</a>
+      <a class="nav-link" href="/ventas">Ventas</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4" style="background-color: #f1f3f5; min-height: 100vh">
+
+  <h1 class="fw-bold mb-4" style="font-size: 1.4rem; color: #1a3a5c">
+    Gestión de Clientes
+  </h1>
+
+  <div *ngIf="mensaje" class="alert alert-info d-flex justify-content-between align-items-center">
+    <span>{{ mensaje }}</span>
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <!-- FORMULARIO CLIENTE -->
+  <div class="card border-0 mb-4 shadow-sm">
+    <div class="card-header text-white" style="background: #1a3a5c">
+      {{ idClienteEditando ? 'Modificar Cliente' : 'Adicionar Cliente' }}
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+
+        <div class="col-md-3">
+          <label class="form-label">Nombre</label>
+          <input class="form-control" [(ngModel)]="nombre" name="nombre" />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Teléfono</label>
+          <input class="form-control" [(ngModel)]="telefono" name="telefono" />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Dirección</label>
+          <input class="form-control" [(ngModel)]="direccion" name="direccion" />
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Correo</label>
+          <input type="email" class="form-control" [(ngModel)]="correo" name="correo" />
+        </div>
+
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-primary" type="button" (click)="guardar()">
+          {{ idClienteEditando ? 'Guardar Cambios' : 'Registrar Cliente' }}
+        </button>
+
+        <button class="btn btn-secondary" type="button" (click)="limpiarFormulario()">
+          Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA CLIENTES -->
+  <div class="card border-0 mb-4 shadow-sm">
+    <div class="card-header text-white" style="background: #1a3a5c">
+      Consulta usando una tabla: Cliente
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
+            <th>Correo</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let cliente of clientes">
+            <td>{{ cliente.id_cliente }}</td>
+            <td>{{ cliente.nombre }}</td>
+            <td>{{ cliente.telefono }}</td>
+            <td>{{ cliente.direccion }}</td>
+            <td>{{ cliente.correo }}</td>
+          </tr>
+
+          <tr *ngIf="clientes.length === 0">
+            <td colspan="5" class="text-center text-muted py-4">
+              Sin clientes registrados
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLA CLIENTES + VENTAS -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header text-white" style="background: #1a3a5c">
+      Consulta usando dos tablas: Cliente + Venta
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>ID Cliente</th>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th>Correo</th>
+            <th>ID Venta</th>
+            <th>Fecha Venta</th>
+            <th>Total Venta</th>
+            <th>Estado Venta</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let cliente of clientesVentas">
+            <td>{{ cliente.id_cliente }}</td>
+            <td>{{ cliente.nombre }}</td>
+            <td>{{ cliente.telefono }}</td>
+            <td>{{ cliente.correo }}</td>
+            <td>{{ cliente.id_venta || 'Sin venta' }}</td>
+            <td>{{ cliente.fecha | date: 'yyyy-MM-dd' }}</td>
+            <td>{{ cliente.total || '-' }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.bg-success]="cliente.estado === 'Pagada'"
+                [class.bg-warning]="cliente.estado === 'Pendiente'"
+                [class.bg-secondary]="cliente.estado === 'Cancelada' || !cliente.estado"
+              >
+                {{ cliente.estado || 'Sin venta' }}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-warning" type="button" (click)="editar(cliente)">
+                  Editar
+                </button>
+
+                <button
+                  class="btn btn-sm btn-danger"
+                  type="button"
+                  (click)="eliminarFisico(cliente.id_cliente)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="clientesVentas.length === 0">
+            <td colspan="9" class="text-center text-muted py-4">
+              Sin clientes registrados
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

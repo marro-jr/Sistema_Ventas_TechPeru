@@ -1,0 +1,176 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold" style="font-size: 1rem; letter-spacing: 0.5px;">
+      TechPerú
+    </span>
+
+    <div class="navbar-nav ms-auto">
+      <button class="btn btn-outline-light btn-sm" type="button" (click)="cerrarSesion()">
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4" style="background-color: #f1f3f5; min-height: 100vh;">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex align-items-center gap-3 mb-1">
+        <div style="width: 4px; height: 36px; background: #1a3a5c; border-radius: 2px;"></div>
+
+        <div>
+          <h1 class="fw-bold mb-0" style="font-size: 1.4rem; color: #1a3a5c; letter-spacing: -0.3px;">
+            Panel de Inicio
+          </h1>
+          <p class="mb-0 small text-muted">
+            Bienvenido, {{ nombre }} · Rol: {{ rol || 'No definido' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje si no hay rol -->
+  <div *ngIf="!rol" class="alert alert-warning border-0 shadow-sm">
+    No se encontró un rol para este usuario. Vuelve a iniciar sesión.
+  </div>
+
+  <!-- Opciones Administrador -->
+  <div *ngIf="rol === 'administrador'" class="row g-4">
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Gestión de Usuarios
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Registrar usuarios, asignar roles y modificar datos de usuarios del sistema.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irRegistro()">
+            Ir a Registro
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Registro de Productos
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Adicionar, modificar, consultar y eliminar productos e inventario.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irMantenimiento()">
+            Ir a registro de Productos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Clientes
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Registrar y consultar clientes para las ventas del sistema.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irClientes()">
+            Ir a Clientes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Ventas
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Consultar y registrar ventas realizadas en el sistema.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irVentas()">
+            Ir a Ventas
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Opciones Vendedor -->
+  <div *ngIf="rol === 'vendedor'" class="row g-4">
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Clientes
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Registrar y consultar clientes para realizar ventas.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irClientes()">
+            Ir a Clientes
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Ventas
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Registrar ventas, agregar productos y generar pagos.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irVentas()">
+            Ir a Ventas
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header text-white" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          Consulta de Productos
+        </div>
+
+        <div class="card-body">
+          <p class="text-muted small">
+            Consultar productos disponibles y stock actual.
+          </p>
+
+          <button class="btn btn-dark w-100" type="button" (click)="irMantenimiento()">
+            Ver Productos
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
