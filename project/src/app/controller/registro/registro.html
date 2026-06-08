@@ -1,0 +1,435 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold">TechPerú</span>
+
+    <div class="navbar-nav">
+      <a class="nav-link" href="/inicio">Inicio</a>
+
+      <a *ngIf="rol === 'administrador'" class="nav-link active" href="/registro">
+        Registro
+      </a>
+
+      <a *ngIf="rol === 'administrador'" class="nav-link" href="/mantenimiento">
+        Productos
+      </a>
+
+      <a class="nav-link" href="/clientes">Clientes</a>
+      <a class="nav-link" href="/ventas">Ventas</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4" style="background-color: #f1f3f5; min-height: 100vh;">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex align-items-center gap-3 mb-1">
+        <div style="width: 4px; height: 36px; background: #1a3a5c; border-radius: 2px;"></div>
+        <div>
+          <h1 class="fw-bold mb-0" style="font-size: 1.4rem; color: #1a3a5c; letter-spacing: -0.3px;">Gestión de Usuarios</h1>
+          <p class="mb-0 small text-muted">Registro · Roles · Administración del sistema</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div *ngIf="ultimoIdRegistrado" class="alert border-0 py-2 px-3 d-flex align-items-center gap-3"
+        style="background-color: #e8f4fd; border-left: 4px solid #1a3a5c !important; border-radius: 8px;">
+        <div>
+          <span class="fw-semibold small" style="color: #1a3a5c;">Usuario registrado exitosamente.</span>
+          <span class="small text-muted ms-2">ID asignado:</span>
+          <span class="badge ms-1 fw-bold" style="background-color: #1a3a5c; font-size: 0.85rem;">{{ ultimoIdRegistrado }}</span>
+          <span class="small text-muted ms-2">— Úsalo para asignarle un rol.</span>
+        </div>
+        <button type="button" class="btn-close ms-auto" style="font-size: 0.7rem;" (click)="ultimoIdRegistrado = null"></button>
+      </div>
+
+      <div *ngIf="mensaje && !ultimoIdRegistrado" class="alert border-0 py-2 px-3 d-flex align-items-center justify-content-between"
+        style="background-color: #e8f4fd; border-left: 4px solid #1a3a5c !important; border-radius: 8px;">
+        <span class="small" style="color: #1a3a5c;">{{ mensaje }}</span>
+        <button type="button" class="btn-close" style="font-size: 0.7rem;" (click)="mensaje = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formularios -->
+  <div class="row g-4 mb-5">
+
+    <!-- Registrar / Modificar usuario -->
+    <div class="col-lg-6">
+      <div class="card border-0 h-100" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
+        <div class="card-header border-0 py-3 px-4" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
+            <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">
+              {{ idUsuarioEditando ? 'Modificar Usuario' : 'Nuevo Usuario' }}
+            </h6>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <form>
+            <div class="mb-3">
+              <label for="correo" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                class="form-control form-control-sm"
+                id="correo"
+                [(ngModel)]="correo"
+                name="correo"
+                [disabled]="idUsuarioEditando !== null"
+                style="border-color: #dee2e6; border-radius: 6px;"
+              >
+              <span *ngIf="errorCorreo" class="text-danger" style="font-size: 0.75rem;">{{ errorCorreo }}</span>
+            </div>
+
+            <div class="mb-3">
+              <label for="nombre" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                Nombre completo
+              </label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="nombre"
+                [(ngModel)]="nombre"
+                name="nombre"
+                style="border-color: #dee2e6; border-radius: 6px;"
+              >
+            </div>
+
+            <div class="mb-3">
+              <label for="contrasena" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                class="form-control form-control-sm"
+                id="contrasena"
+                [(ngModel)]="contrasena"
+                name="contrasena"
+                [disabled]="idUsuarioEditando !== null"
+                style="border-color: #dee2e6; border-radius: 6px;"
+              >
+              <span *ngIf="errorPass" class="text-danger" style="font-size: 0.75rem;">{{ errorPass }}</span>
+            </div>
+
+            <div class="mb-4">
+              <label for="estado" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                Estado
+              </label>
+              <select
+                class="form-select form-select-sm"
+                id="estado"
+                [(ngModel)]="estado"
+                name="estado"
+                style="border-color: #dee2e6; border-radius: 6px;"
+              >
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              class="btn w-100 fw-semibold text-white"
+              style="background-color: #1a3a5c; border: none; border-radius: 8px; font-size: 0.85rem; padding: 9px;"
+              (click)="guardar()"
+            >
+              {{ idUsuarioEditando ? 'Guardar Cambios' : 'Registrar Usuario' }}
+            </button>
+
+            <button
+              *ngIf="idUsuarioEditando"
+              type="button"
+              class="btn btn-secondary w-100 mt-2"
+              style="border-radius: 8px; font-size: 0.85rem; padding: 9px;"
+              (click)="limpiarFormularioUsuario()"
+            >
+              Cancelar edición
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Asignar / modificar rol -->
+    <div class="col-lg-6">
+      <div class="card border-0 h-100" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
+        <div class="card-header border-0 py-3 px-4" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
+            <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">
+              {{ editandoRol ? 'Modificar Turno' : 'Asignar Rol' }}
+            </h6>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label for="rolSeleccionado" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              Rol
+            </label>
+            <select
+              class="form-select form-select-sm"
+              id="rolSeleccionado"
+              [(ngModel)]="rolSeleccionado"
+              name="rolSeleccionado"
+              [disabled]="editandoRol"
+              style="border-color: #dee2e6; border-radius: 6px;"
+            >
+              <option value="" disabled>Seleccionar</option>
+              <option value="administrador">Administrador</option>
+              <option value="vendedor">Vendedor</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="usuarioSeleccionado" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              ID Usuario
+            </label>
+            <input
+              type="number"
+              class="form-control form-control-sm"
+              id="usuarioSeleccionado"
+              [(ngModel)]="usuarioSeleccionado"
+              name="usuarioSeleccionado"
+              [disabled]="editandoRol"
+              placeholder="Ej: 5"
+              style="border-color: #dee2e6; border-radius: 6px;"
+            >
+          </div>
+
+          <div class="mb-4">
+            <label for="turno" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              Turno
+            </label>
+            <select
+              class="form-select form-select-sm"
+              id="turno"
+              [(ngModel)]="turno"
+              name="turno"
+              style="border-color: #dee2e6; border-radius: 6px;"
+            >
+              <option value="" disabled>Seleccionar</option>
+              <option value="mañana">Mañana</option>
+              <option value="tarde">Tarde</option>
+              <option value="full time">Full Time</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            class="btn w-100 fw-semibold text-white"
+            style="background-color: #1a3a5c; border: none; border-radius: 8px; font-size: 0.85rem; padding: 9px;"
+            (click)="asignarRol()"
+          >
+            {{ editandoRol ? 'Guardar Turno' : 'Asignar Rol' }}
+          </button>
+
+          <button
+            *ngIf="editandoRol"
+            type="button"
+            class="btn btn-secondary w-100 mt-2"
+            style="border-radius: 8px; font-size: 0.85rem; padding: 9px;"
+            (click)="limpiarFormularioRol()"
+          >
+            Cancelar edición
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Título sección tablas -->
+  <div class="row mb-3">
+    <div class="col-12 d-flex align-items-center gap-3">
+      <div style="width: 4px; height: 24px; background: #1a3a5c; border-radius: 2px;"></div>
+      <h2 class="fw-bold mb-0" style="font-size: 1.1rem; color: #1a3a5c;">Tabla de Usuarios y Roles</h2>
+    </div>
+  </div>
+
+  <!-- Tabla todos los usuarios -->
+  <div class="card border-0 mb-4" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
+    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+      <div class="d-flex align-items-center gap-2">
+        <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
+        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Todos los Usuarios</h6>
+      </div>
+      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{ usuarios.length }}</span>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0" style="font-size: 0.875rem;">
+          <thead class="table-dark">
+            <tr>
+              <th class="ps-4 py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ID</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">CORREO</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">NOMBRE</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ESTADO</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ACCIONES</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let usuario of usuarios">
+              <td class="ps-4 py-3">
+                <span class="badge" style="background-color: #e8f0f8; color: #1a3a5c; font-weight: 600;">
+                  {{ usuario.id_usuario }}
+                </span>
+              </td>
+              <td class="py-3 text-muted">{{ usuario.correo }}</td>
+              <td class="py-3 fw-medium">{{ usuario.nombre }}</td>
+              <td class="py-3">
+                <span class="badge rounded-pill px-3"
+                  [style.background-color]="usuario.estado === 'activo' ? '#d4edda' : '#f8d7da'"
+                  [style.color]="usuario.estado === 'activo' ? '#155724' : '#721c24'">
+                  {{ usuario.estado }}
+                </span>
+              </td>
+              <td class="py-3">
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-warning" type="button" (click)="editarUsuario(usuario)">
+                    Editar
+                  </button>
+
+
+                  <button class="btn btn-sm btn-danger" type="button" (click)="eliminarUsuario(usuario.id_usuario)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="usuarios.length === 0">
+              <td colspan="5" class="text-center text-muted py-5 small">Sin usuarios registrados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla Administradores -->
+  <div class="card border-0 mb-4" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
+    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+      <div class="d-flex align-items-center gap-2">
+        <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
+        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Administradores</h6>
+      </div>
+      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{ administradores.length }}</span>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0" style="font-size: 0.875rem;">
+          <thead class="table-dark">
+            <tr>
+              <th class="ps-4 py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ID</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">CORREO</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">NOMBRE</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">TURNO</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ROL</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ACCIONES</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let admin of administradores">
+              <td class="ps-4 py-3">
+                <span class="badge" style="background-color: #e8f0f8; color: #1a3a5c; font-weight: 600;">
+                  {{ admin.ID }}
+                </span>
+              </td>
+              <td class="py-3 text-muted">{{ admin.Correo }}</td>
+              <td class="py-3 fw-medium">{{ admin.Nombre }}</td>
+              <td class="py-3 text-muted">{{ admin.Turno }}</td>
+              <td class="py-3">
+                <span class="badge rounded-pill px-3" style="background-color: #d4edda; color: #155724;">
+                  {{ admin.Rol }}
+                </span>
+              </td>
+              <td class="py-3">
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-warning" type="button" (click)="editarRol('administrador', admin)">
+                    Editar turno
+                  </button>
+
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="administradores.length === 0">
+              <td colspan="6" class="text-center text-muted py-5 small">Sin administradores registrados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla Vendedores -->
+  <div class="card border-0 mb-4" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
+    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+      <div class="d-flex align-items-center gap-2">
+        <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
+        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Vendedores</h6>
+      </div>
+      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{ vendedores.length }}</span>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0" style="font-size: 0.875rem;">
+          <thead class="table-dark">
+            <tr>
+              <th class="ps-4 py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ID</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">CORREO</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">NOMBRE</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">TURNO</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ROL</th>
+              <th class="py-3" style="font-size: 0.7rem; letter-spacing: 0.8px;">ACCIONES</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let vendedor of vendedores">
+              <td class="ps-4 py-3">
+                <span class="badge" style="background-color: #e8f0f8; color: #1a3a5c; font-weight: 600;">
+                  {{ vendedor.ID }}
+                </span>
+              </td>
+              <td class="py-3 text-muted">{{ vendedor.Correo }}</td>
+              <td class="py-3 fw-medium">{{ vendedor.Nombre }}</td>
+              <td class="py-3 text-muted">{{ vendedor.Turno }}</td>
+              <td class="py-3">
+                <span class="badge rounded-pill px-3" style="background-color: #fff3cd; color: #856404;">
+                  {{ vendedor.Rol }}
+                </span>
+              </td>
+              <td class="py-3">
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-warning" type="button" (click)="editarRol('vendedor', vendedor)">
+                    Editar turno
+                  </button>
+
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="vendedores.length === 0">
+              <td colspan="6" class="text-center text-muted py-5 small">Sin vendedores registrados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
