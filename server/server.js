@@ -12,7 +12,7 @@ const puerto = 3000;
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "1234",
+  password: "",
   database: "db_tech_peru",
   port: 3306,
 });
@@ -410,11 +410,14 @@ app.put("/productos/:id/eliminar-logico", (req, res) => {
   const { id } = req.params;
 
   const query = `
-        UPDATE producto
-        SET estado = 'Inactivo'
-        WHERE id_producto = ?;
-    `;
-
+    UPDATE producto
+    SET estado =
+      CASE
+        WHEN estado = 'Disponible' THEN 'Inactivo'
+        ELSE 'Disponible'
+      END
+    WHERE id_producto = ?;
+  `;
   db.query(query, [id], (err) => {
     if (err) {
       res.status(500).json({ error: `Error al eliminar lógicamente: ${err}` });
@@ -587,78 +590,127 @@ app.post("/ventas", (req, res) => {
     referencia,
   } = req.body;
 
-  const ventaQuery = `
-        INSERT INTO venta (fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor)
-        VALUES (?, ?, ?, ?, ?, ?, ?);
+  const stockQuery = `
+    SELECT stock_actual
+    FROM inventario
+    WHERE id_producto = ?;
+  `;
+
+  db.query(stockQuery, [id_producto], (err, stockResult) => {
+    if (err) {
+      return res.status(500).json({
+        error: `Error al verificar stock: ${err}`,
+      });
+    }
+
+    if (stockResult.length === 0) {
+      return res.status(404).json({
+        error: "Producto no encontrado en inventario",
+      });
+    }
+
+    const stockActual = stockResult[0].stock_actual;
+
+    if (cantidad > stockActual) {
+      return res.status(400).json({
+        error: `Stock insuficiente. Disponible: ${stockActual}`,
+      });
+    }
+
+    const ventaQuery = `
+      INSERT INTO venta
+      (fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor)
+      VALUES (?, ?, ?, ?, ?, ?, ?);
     `;
 
-  db.query(
-    ventaQuery,
-    [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor],
-    (err, ventaResult) => {
-      if (err) {
-        res.status(500).json({ error: `Error al registrar venta: ${err}` });
-        return;
-      }
+    db.query(
+      ventaQuery,
+      [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor],
+      (err, ventaResult) => {
+        if (err) {
+          return res.status(500).json({
+            error: `Error al registrar venta: ${err}`,
+          });
+        }
 
-      const idVenta = ventaResult.insertId;
+        const idVenta = ventaResult.insertId;
 
-      const detalleQuery = `
-                INSERT INTO detalleventa (id_venta, id_producto, cantidad, precio_unitario, descuento, subtotal)
-                VALUES (?, ?, ?, ?, ?, ?);
+        const detalleQuery = `
+          INSERT INTO detalleventa
+          (id_venta, id_producto, cantidad, precio_unitario, descuento, subtotal)
+          VALUES (?, ?, ?, ?, ?, ?);
+        `;
+
+        db.query(
+          detalleQuery,
+          [
+            idVenta,
+            id_producto,
+            cantidad,
+            precio_unitario,
+            descuento_detalle,
+            subtotal_detalle,
+          ],
+          (err) => {
+            if (err) {
+              return res.status(500).json({
+                error: `Error al registrar detalle de venta: ${err}`,
+              });
+            }
+
+            const pagoQuery = `
+              INSERT INTO pago
+              (metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id_venta)
+              VALUES (?, ?, ?, ?, ?, ?, ?);
             `;
 
-      db.query(
-        detalleQuery,
-        [
-          idVenta,
-          id_producto,
-          cantidad,
-          precio_unitario,
-          descuento_detalle,
-          subtotal_detalle,
-        ],
-        (err) => {
-          if (err) {
-            res
-              .status(500)
-              .json({ error: `Error al registrar detalle de venta: ${err}` });
-            return;
-          }
+            db.query(
+              pagoQuery,
+              [
+                metodo_pago,
+                monto,
+                moneda,
+                estado_pago,
+                fecha_pago,
+                referencia,
+                idVenta,
+              ],
+              (err) => {
+                if (err) {
+                  return res.status(500).json({
+                    error: `Error al registrar pago: ${err}`,
+                  });
+                }
 
-          const pagoQuery = `
-                        INSERT INTO pago (metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id_venta)
-                        VALUES (?, ?, ?, ?, ?, ?, ?);
-                    `;
+                const actualizarStock = `
+                  UPDATE inventario
+                  SET stock_actual = stock_actual - ?
+                  WHERE id_producto = ?;
+                `;
 
-          db.query(
-            pagoQuery,
-            [
-              metodo_pago,
-              monto,
-              moneda,
-              estado_pago,
-              fecha_pago,
-              referencia,
-              idVenta,
-            ],
-            (err) => {
-              if (err) {
-                res
-                  .status(500)
-                  .json({ error: `Error al registrar pago: ${err}` });
-              } else {
-                res.json({
-                  message: "Venta registrada exitosamente",
-                  id_venta: idVenta,
-                });
+                db.query(
+                  actualizarStock,
+                  [cantidad, id_producto],
+                  (err) => {
+                    if (err) {
+                      return res.status(500).json({
+                        error: `Venta registrada pero error al actualizar stock: ${err}`,
+                      });
+                    }
+
+                    res.json({
+                      message: "Venta registrada exitosamente",
+                      id_venta: idVenta,
+                    });
+                  }
+                );
               }
-            },
-          );
-        },
-      );
-    },
-  );
+            );
+          }
+        );
+      }
+    );
+  });
 });
 
 // Modificar venta con detalle y pago
