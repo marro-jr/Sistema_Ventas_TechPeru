@@ -27,7 +27,8 @@
       <div class="d-flex align-items-center gap-3 mb-1">
         <div style="width: 4px; height: 36px; background: #1a3a5c; border-radius: 2px;"></div>
         <div>
-          <h1 class="fw-bold mb-0" style="font-size: 1.4rem; color: #1a3a5c; letter-spacing: -0.3px;">Gestión de Usuarios</h1>
+          <h1 class="fw-bold mb-0" style="font-size: 1.4rem; color: #1a3a5c; letter-spacing: -0.3px;">Gestión de
+            Usuarios</h1>
           <p class="mb-0 small text-muted">Registro · Roles · Administración del sistema</p>
         </div>
       </div>
@@ -42,13 +43,16 @@
         <div>
           <span class="fw-semibold small" style="color: #1a3a5c;">Usuario registrado exitosamente.</span>
           <span class="small text-muted ms-2">ID asignado:</span>
-          <span class="badge ms-1 fw-bold" style="background-color: #1a3a5c; font-size: 0.85rem;">{{ ultimoIdRegistrado }}</span>
+          <span class="badge ms-1 fw-bold" style="background-color: #1a3a5c; font-size: 0.85rem;">{{ ultimoIdRegistrado
+            }}</span>
           <span class="small text-muted ms-2">— Úsalo para asignarle un rol.</span>
         </div>
-        <button type="button" class="btn-close ms-auto" style="font-size: 0.7rem;" (click)="ultimoIdRegistrado = null"></button>
+        <button type="button" class="btn-close ms-auto" style="font-size: 0.7rem;"
+          (click)="ultimoIdRegistrado = null"></button>
       </div>
 
-      <div *ngIf="mensaje && !ultimoIdRegistrado" class="alert border-0 py-2 px-3 d-flex align-items-center justify-content-between"
+      <div *ngIf="mensaje && !ultimoIdRegistrado"
+        class="alert border-0 py-2 px-3 d-flex align-items-center justify-content-between"
         style="background-color: #e8f4fd; border-left: 4px solid #1a3a5c !important; border-radius: 8px;">
         <span class="small" style="color: #1a3a5c;">{{ mensaje }}</span>
         <button type="button" class="btn-close" style="font-size: 0.7rem;" (click)="mensaje = ''"></button>
@@ -74,83 +78,56 @@
         <div class="card-body p-4">
           <form>
             <div class="mb-3">
-              <label for="correo" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              <label for="correo" class="form-label fw-medium text-uppercase text-muted"
+                style="font-size: 0.68rem; letter-spacing: 0.8px;">
                 Correo electrónico
               </label>
-              <input
-                type="email"
-                class="form-control form-control-sm"
-                id="correo"
-                [(ngModel)]="correo"
-                name="correo"
-                [disabled]="idUsuarioEditando !== null"
-                style="border-color: #dee2e6; border-radius: 6px;"
-              >
+              <input type="email" class="form-control form-control-sm" id="correo" [(ngModel)]="correo" maxlength="50"
+                name="correo" [disabled]="idUsuarioEditando !== null"
+                style="border-color: #dee2e6; border-radius: 6px;">
               <span *ngIf="errorCorreo" class="text-danger" style="font-size: 0.75rem;">{{ errorCorreo }}</span>
             </div>
 
             <div class="mb-3">
-              <label for="nombre" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              <label for="nombre" class="form-label fw-medium text-uppercase text-muted"
+                style="font-size: 0.68rem; letter-spacing: 0.8px;">
                 Nombre completo
               </label>
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                id="nombre"
-                [(ngModel)]="nombre"
-                name="nombre"
-                style="border-color: #dee2e6; border-radius: 6px;"
-              >
+              <input type="text" class="form-control form-control-sm" id="nombre" [(ngModel)]="nombre" maxlength="50"
+                name="nombre" style="border-color: #dee2e6; border-radius: 6px;">
             </div>
 
             <div class="mb-3">
-              <label for="contrasena" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              <label for="contrasena" class="form-label fw-medium text-uppercase text-muted"
+                style="font-size: 0.68rem; letter-spacing: 0.8px;">
                 Contraseña
               </label>
-              <input
-                type="password"
-                class="form-control form-control-sm"
-                id="contrasena"
-                [(ngModel)]="contrasena"
-                name="contrasena"
-                [disabled]="idUsuarioEditando !== null"
-                style="border-color: #dee2e6; border-radius: 6px;"
-              >
+              <input type="password" class="form-control form-control-sm" id="contrasena" [(ngModel)]="contrasena"
+                maxlength="50" name="contrasena" [disabled]="idUsuarioEditando !== null"
+                style="border-color: #dee2e6; border-radius: 6px;">
               <span *ngIf="errorPass" class="text-danger" style="font-size: 0.75rem;">{{ errorPass }}</span>
             </div>
 
             <div class="mb-4">
-              <label for="estado" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+              <label for="estado" class="form-label fw-medium text-uppercase text-muted"
+                style="font-size: 0.68rem; letter-spacing: 0.8px;">
                 Estado
               </label>
-              <select
-                class="form-select form-select-sm"
-                id="estado"
-                [(ngModel)]="estado"
-                name="estado"
-                style="border-color: #dee2e6; border-radius: 6px;"
-              >
+              <select class="form-select form-select-sm" id="estado" [(ngModel)]="estado" name="estado"
+                style="border-color: #dee2e6; border-radius: 6px;">
                 <option value="activo">Activo</option>
                 <option value="inactivo">Inactivo</option>
               </select>
             </div>
 
-            <button
-              type="button"
-              class="btn w-100 fw-semibold text-white"
+            <button type="button" class="btn w-100 fw-semibold text-white"
               style="background-color: #1a3a5c; border: none; border-radius: 8px; font-size: 0.85rem; padding: 9px;"
-              (click)="guardar()"
-            >
+              (click)="guardar()">
               {{ idUsuarioEditando ? 'Guardar Cambios' : 'Registrar Usuario' }}
             </button>
 
-            <button
-              *ngIf="idUsuarioEditando"
-              type="button"
-              class="btn btn-secondary w-100 mt-2"
-              style="border-radius: 8px; font-size: 0.85rem; padding: 9px;"
-              (click)="limpiarFormularioUsuario()"
-            >
+            <button *ngIf="idUsuarioEditando" type="button" class="btn btn-secondary w-100 mt-2"
+              style="border-radius: 8px; font-size: 0.85rem; padding: 9px;" (click)="limpiarFormularioUsuario()">
               Cancelar edición
             </button>
           </form>
@@ -172,17 +149,12 @@
 
         <div class="card-body p-4">
           <div class="mb-3">
-            <label for="rolSeleccionado" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+            <label for="rolSeleccionado" class="form-label fw-medium text-uppercase text-muted"
+              style="font-size: 0.68rem; letter-spacing: 0.8px;">
               Rol
             </label>
-            <select
-              class="form-select form-select-sm"
-              id="rolSeleccionado"
-              [(ngModel)]="rolSeleccionado"
-              name="rolSeleccionado"
-              [disabled]="editandoRol"
-              style="border-color: #dee2e6; border-radius: 6px;"
-            >
+            <select class="form-select form-select-sm" id="rolSeleccionado" [(ngModel)]="rolSeleccionado"
+              name="rolSeleccionado" [disabled]="editandoRol" style="border-color: #dee2e6; border-radius: 6px;">
               <option value="" disabled>Seleccionar</option>
               <option value="administrador">Administrador</option>
               <option value="vendedor">Vendedor</option>
@@ -190,32 +162,22 @@
           </div>
 
           <div class="mb-3">
-            <label for="usuarioSeleccionado" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+            <label for="usuarioSeleccionado" class="form-label fw-medium text-uppercase text-muted"
+              style="font-size: 0.68rem; letter-spacing: 0.8px;">
               ID Usuario
             </label>
-            <input
-              type="number"
-              class="form-control form-control-sm"
-              id="usuarioSeleccionado"
-              [(ngModel)]="usuarioSeleccionado"
-              name="usuarioSeleccionado"
-              [disabled]="editandoRol"
-              placeholder="Ej: 5"
-              style="border-color: #dee2e6; border-radius: 6px;"
-            >
+            <input type="number" class="form-control form-control-sm" id="usuarioSeleccionado"
+              [(ngModel)]="usuarioSeleccionado" name="usuarioSeleccionado" [disabled]="editandoRol" placeholder="Ej: 5"
+              style="border-color: #dee2e6; border-radius: 6px;">
           </div>
 
           <div class="mb-4">
-            <label for="turno" class="form-label fw-medium text-uppercase text-muted" style="font-size: 0.68rem; letter-spacing: 0.8px;">
+            <label for="turno" class="form-label fw-medium text-uppercase text-muted"
+              style="font-size: 0.68rem; letter-spacing: 0.8px;">
               Turno
             </label>
-            <select
-              class="form-select form-select-sm"
-              id="turno"
-              [(ngModel)]="turno"
-              name="turno"
-              style="border-color: #dee2e6; border-radius: 6px;"
-            >
+            <select class="form-select form-select-sm" id="turno" [(ngModel)]="turno" name="turno"
+              style="border-color: #dee2e6; border-radius: 6px;">
               <option value="" disabled>Seleccionar</option>
               <option value="mañana">Mañana</option>
               <option value="tarde">Tarde</option>
@@ -223,22 +185,14 @@
             </select>
           </div>
 
-          <button
-            type="button"
-            class="btn w-100 fw-semibold text-white"
+          <button type="button" class="btn w-100 fw-semibold text-white"
             style="background-color: #1a3a5c; border: none; border-radius: 8px; font-size: 0.85rem; padding: 9px;"
-            (click)="asignarRol()"
-          >
+            (click)="asignarRol()">
             {{ editandoRol ? 'Guardar Turno' : 'Asignar Rol' }}
           </button>
 
-          <button
-            *ngIf="editandoRol"
-            type="button"
-            class="btn btn-secondary w-100 mt-2"
-            style="border-radius: 8px; font-size: 0.85rem; padding: 9px;"
-            (click)="limpiarFormularioRol()"
-          >
+          <button *ngIf="editandoRol" type="button" class="btn btn-secondary w-100 mt-2"
+            style="border-radius: 8px; font-size: 0.85rem; padding: 9px;" (click)="limpiarFormularioRol()">
             Cancelar edición
           </button>
         </div>
@@ -256,12 +210,15 @@
 
   <!-- Tabla todos los usuarios -->
   <div class="card border-0 mb-4" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
-    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center"
+      style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
       <div class="d-flex align-items-center gap-2">
         <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
-        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Todos los Usuarios</h6>
+        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Todos
+          los Usuarios</h6>
       </div>
-      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{ usuarios.length }}</span>
+      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{
+        usuarios.length }}</span>
     </div>
 
     <div class="card-body p-0">
@@ -299,6 +256,10 @@
                     Editar
                   </button>
 
+                  <button class="btn btn-sm" [class.btn-danger]="usuario.estado?.toLowerCase() === 'activo'"
+                    [class.btn-success]="usuario.estado?.toLowerCase() !== 'activo'" (click)="toggleEstado(usuario)">
+                    {{ usuario.estado?.toLowerCase() === 'activo' ? 'Desactivar' : 'Activar' }}
+                  </button>
 
                   <button class="btn btn-sm btn-danger" type="button" (click)="eliminarUsuario(usuario.id_usuario)">
                     Eliminar
@@ -318,12 +279,15 @@
 
   <!-- Tabla Administradores -->
   <div class="card border-0 mb-4" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
-    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center"
+      style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
       <div class="d-flex align-items-center gap-2">
         <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
-        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Administradores</h6>
+        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">
+          Administradores</h6>
       </div>
-      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{ administradores.length }}</span>
+      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{
+        administradores.length }}</span>
     </div>
 
     <div class="card-body p-0">
@@ -376,12 +340,15 @@
 
   <!-- Tabla Vendedores -->
   <div class="card border-0 mb-4" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
-    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
+    <div class="card-header border-0 py-3 px-4 d-flex justify-content-between align-items-center"
+      style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
       <div class="d-flex align-items-center gap-2">
         <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
-        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">Vendedores</h6>
+        <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">
+          Vendedores</h6>
       </div>
-      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{ vendedores.length }}</span>
+      <span class="badge rounded-pill" style="background: rgba(255,255,255,0.15); color: #fff; font-size: 0.75rem;">{{
+        vendedores.length }}</span>
     </div>
 
     <div class="card-body p-0">

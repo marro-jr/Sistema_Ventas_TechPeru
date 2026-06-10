@@ -36,27 +36,27 @@
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label">Nombre</label>
-          <input class="form-control" [(ngModel)]="nombre" name="nombre" />
+          <input class="form-control" [(ngModel)]="nombre" name="nombre" [disabled]="idProductoEditando !== null" />
         </div>
 
         <div class="col-md-4">
           <label class="form-label">Marca</label>
-          <input class="form-control" [(ngModel)]="marca" name="marca" />
+          <input class="form-control" [(ngModel)]="marca" name="marca" [disabled]="idProductoEditando !== null" />
         </div>
 
         <div class="col-md-4">
           <label class="form-label">Modelo</label>
-          <input class="form-control" [(ngModel)]="modelo" name="modelo" />
+          <input class="form-control" [(ngModel)]="modelo" name="modelo" [disabled]="idProductoEditando !== null" />
         </div>
 
         <div class="col-md-4">
           <label class="form-label">Tipo Switch</label>
-          <input class="form-control" [(ngModel)]="tipo_switch" name="tipo_switch" />
+          <input class="form-control" [(ngModel)]="tipo_switch" name="tipo_switch" [disabled]="idProductoEditando !== null" />
         </div>
 
         <div class="col-md-4">
           <label class="form-label">Tipo Layout</label>
-          <input class="form-control" [(ngModel)]="tipo_layout" name="tipo_layout" />
+          <input class="form-control" [(ngModel)]="tipo_layout" name="tipo_layout" [disabled]="idProductoEditando !== null" />
         </div>
 
         <div class="col-md-4">

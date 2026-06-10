@@ -56,8 +56,8 @@ export class Registro implements OnInit {
       return;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{9,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,100}$/;
+    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{9,50}$/;
 
     if (!emailRegex.test(this.correo)) {
       this.errorCorreo = 'Correo inválido';
@@ -229,7 +229,7 @@ export class Registro implements OnInit {
   editarRol(rol: string, usuario: any): void {
     this.editandoRol = true;
     this.rolSeleccionado = rol;
-    this.usuarioSeleccionado = usuario.ID;
+    this.usuarioSeleccionado = usuario.id_usuario ?? usuario.ID;
     this.turno = usuario.Turno;
   }
 
@@ -240,4 +240,25 @@ export class Registro implements OnInit {
     this.turno = '';
     this.rolSeleccionado = 'administrador';
   }
+
+  toggleEstado(usuario: any) {
+  const estadoActual = (usuario.estado || '').toLowerCase();
+const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+
+  this.registroService.modificarUsuario(
+    usuario.id_usuario,
+    usuario.nombre,
+    nuevoEstado
+  ).subscribe({
+    next: (res) => {
+      usuario.estado = nuevoEstado;
+      this.mensaje = res.message;
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      this.mensaje = `Error: ${err.error?.error || 'No se pudo cambiar estado'}`;
+    }
+  });
+}
+
 }

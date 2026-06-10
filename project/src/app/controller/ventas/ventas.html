@@ -44,12 +44,12 @@
 
         <div class="col-md-3">
           <label class="form-label">Fecha</label>
-          <input type="date" class="form-control" [(ngModel)]="fecha" name="fecha" />
+          <input type="date" class="form-control" [(ngModel)]="fecha" name="fecha" [disabled]="idVentaEditando !== null" />
         </div>
 
         <div class="col-md-3">
           <label class="form-label">Cliente</label>
-          <select class="form-select" [(ngModel)]="id_cliente" name="id_cliente">
+          <select class="form-select" [(ngModel)]="id_cliente" name="id_cliente" [disabled]="idVentaEditando !== null">
             <option [ngValue]="null">Seleccione cliente</option>
             <option *ngFor="let cliente of clientes" [ngValue]="cliente.id_cliente">
               {{ cliente.nombre }}
@@ -59,7 +59,7 @@
 
         <div class="col-md-3">
           <label class="form-label">Vendedor</label>
-          <select class="form-select" [(ngModel)]="id_vendedor" name="id_vendedor">
+          <select class="form-select" [(ngModel)]="id_vendedor" name="id_vendedor" [disabled]="idVentaEditando !== null">
             <option [ngValue]="null">Seleccione vendedor</option>
             <option *ngFor="let vendedor of vendedores" [ngValue]="vendedor.id_vendedor">
               {{ vendedor.nombre }}
@@ -88,8 +88,8 @@
             class="form-select"
             [(ngModel)]="id_producto"
             name="id_producto"
-            (change)="seleccionarProducto()"
-          >
+            (change)="seleccionarProducto()" [disabled]="idVentaEditando !== null">
+          
             <option [ngValue]="null">Seleccione producto</option>
             <option *ngFor="let producto of productosInventario" [ngValue]="producto.id_producto">
               {{ producto.nombre }} - Stock: {{ producto.stock_actual }}
@@ -104,8 +104,7 @@
             class="form-control"
             [(ngModel)]="cantidad"
             name="cantidad"
-            (input)="calcularTotales()"
-          />
+            (input)="calcularTotales()" [disabled]="idVentaEditando !== null" />
         </div>
 
         <div class="col-md-2">

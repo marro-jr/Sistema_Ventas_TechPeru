@@ -56,7 +56,7 @@
 
         <div class="col-md-3">
           <label class="form-label">Correo</label>
-          <input type="email" class="form-control" [(ngModel)]="correo" name="correo" />
+          <input type="email" class="form-control" [(ngModel)]="correo" name="correo" [disabled]="idClienteEditando !== null" />
         </div>
 
       </div>
