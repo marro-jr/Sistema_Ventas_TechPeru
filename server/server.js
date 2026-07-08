@@ -87,6 +87,11 @@ app.post("/login", (req, res) => {
 app.post("/registro", (req, res) => {
   const { correo, nombre, contrasena, estado } = req.body;
 
+  const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{9,50}$/;
+  if (!passRegex.test(contrasena)) {
+    return res.status(400).json({ error: "La contraseña no cumple con los requisitos de seguridad." });
+  }
+
   const query = `insert into usuario (correo, nombre, contrasena, estado) values (?, ?, ?, ?);`;
 
   db.query(query, [correo, nombre, contrasena, estado], (err, results) => {
@@ -119,6 +124,10 @@ app.get("/usuarios", (req, res) => {
 app.post("/registro/:rol", (req, res) => {
   const { rol } = req.params;
 
+  if (rol !== 'administrador' && rol !== 'vendedor') {
+    return res.status(400).json({ error: "Rol inválido. Posibles ataques de inyección SQL bloqueados." });
+  }
+
   const { id_usuario, turno, area } = req.body;
 
   const query = `
@@ -140,6 +149,10 @@ app.post("/registro/:rol", (req, res) => {
 
 app.get("/registro/:rol", (req, res) => {
   const rol = req.params.rol;
+
+  if (rol !== 'administrador' && rol !== 'vendedor') {
+    return res.status(400).json({ error: "Rol inválido." });
+  }
 
   const query = `
     select 
@@ -186,41 +199,27 @@ app.put("/usuarios/:id", (req, res) => {
 app.delete("/usuarios/:id", (req, res) => {
   const { id } = req.params;
 
-  const deleteAdmin = `
-        DELETE FROM administrador
-        WHERE id_usuario = ?;
-    `;
-
-  db.query(deleteAdmin, [id], (err) => {
-    if (err) {
-      res
-        .status(500)
-        .json({ error: `Error al eliminar administrador: ${err}` });
-      return;
+  // Error handling centralizado para FK
+  const handleFKError = (err, res, contexto) => {
+    if (err.errno === 1451) {
+      return res.status(409).json({ error: `No se puede eliminar físicamente este usuario porque tiene dependencias en el sistema (ej. Ventas, Reportes). Usa la eliminación lógica (inactivar).` });
     }
+    return res.status(500).json({ error: `Error al eliminar ${contexto}: ${err}` });
+  };
 
-    const deleteVendedor = `
-            DELETE FROM vendedor
-            WHERE id_usuario = ?;
-        `;
+  const deleteAdmin = `DELETE FROM administrador WHERE id_usuario = ?;`;
+  db.query(deleteAdmin, [id], (err) => {
+    if (err) return handleFKError(err, res, "administrador");
 
+    const deleteVendedor = `DELETE FROM vendedor WHERE id_usuario = ?;`;
     db.query(deleteVendedor, [id], (err) => {
-      if (err) {
-        res.status(500).json({ error: `Error al eliminar vendedor: ${err}` });
-        return;
-      }
+      if (err) return handleFKError(err, res, "vendedor");
 
-      const deleteUsuario = `
-                DELETE FROM usuario
-                WHERE id_usuario = ?;
-            `;
-
+      const deleteUsuario = `DELETE FROM usuario WHERE id_usuario = ?;`;
       db.query(deleteUsuario, [id], (err) => {
-        if (err) {
-          res.status(500).json({ error: `Error al eliminar usuario: ${err}` });
-        } else {
-          res.json({ message: "Usuario eliminado físicamente" });
-        }
+        if (err) return handleFKError(err, res, "usuario");
+
+        res.json({ message: "Usuario eliminado físicamente con éxito" });
       });
     });
   });
@@ -231,6 +230,11 @@ app.delete("/usuarios/:id", (req, res) => {
 // Ruta para modificar turno de administrador o vendedor
 app.put("/registro/:rol/:id_usuario", (req, res) => {
   const { rol, id_usuario } = req.params;
+
+  if (rol !== 'administrador' && rol !== 'vendedor') {
+    return res.status(400).json({ error: "Rol inválido." });
+  }
+
   const { turno, area } = req.body;
 
   const query = `

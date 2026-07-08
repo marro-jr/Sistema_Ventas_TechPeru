@@ -14,11 +14,11 @@ export class Registro implements OnInit {
   correo: string = '';
   nombre: string = '';
   contrasena: string = '';
-  estado: string = '';
+  estado: string = 'activo';
 
   rolSeleccionado: string = 'administrador';
   usuarioSeleccionado: number | null = null;
-  turno: string = '';
+  turno: string = 'mañana';
 
   usuarios: any[] = [];
   administradores: any[] = [];
@@ -40,12 +40,27 @@ export class Registro implements OnInit {
   ) {}
 
   ngOnInit(): void {
-  this.rol = localStorage.getItem('rol') || '';
+    this.rol = localStorage.getItem('rol') || '';
 
-  this.cargarUsuarios();
-  this.cargarAdministradores();
-  this.cargarVendedores();
-}
+    this.cargarUsuarios();
+    this.cargarAdministradores();
+    this.cargarVendedores();
+  }
+
+  get passwordValidations() {
+    return {
+      length: this.contrasena.length >= 9,
+      upper: /[A-Z]/.test(this.contrasena),
+      lower: /[a-z]/.test(this.contrasena),
+      number: /\d/.test(this.contrasena),
+      special: /[@$!%*?&]/.test(this.contrasena)
+    };
+  }
+
+  get isPasswordValid() {
+    const v = this.passwordValidations;
+    return v.length && v.upper && v.lower && v.number && v.special;
+  }
 
   guardar() {
     this.errorCorreo = '';
@@ -57,16 +72,14 @@ export class Registro implements OnInit {
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,100}$/;
-    const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{9,50}$/;
-
+    
     if (!emailRegex.test(this.correo)) {
       this.errorCorreo = 'Correo inválido';
       return;
     }
 
-    if (!passRegex.test(this.contrasena)) {
-      this.errorPass =
-        'Contraseña debe tener >8 caracteres, 1 mayus, 1 min, 1 num y 1 carácter especial';
+    if (!this.isPasswordValid) {
+      this.errorPass = 'Contraseña no cumple requisitos de seguridad.';
       return;
     }
 
@@ -78,20 +91,42 @@ export class Registro implements OnInit {
       .insertarUsuario(this.correo, this.nombre, this.contrasena, this.estado)
       .subscribe({
         next: (res) => {
-          this.ultimoIdRegistrado = res.id_usuario; // ← guarda el ID
-          this.mensaje = `Usuario registrado exitosamente. Su ID es: ${res.id_usuario}`;
-          this.correo = '';
-          this.nombre = '';
-          this.contrasena = '';
-          this.estado = '';
-          this.cargarUsuarios();
-          this.cdr.detectChanges();
+          this.ultimoIdRegistrado = res.id_usuario;
+          
+          if (this.rolSeleccionado && this.turno) {
+            this.registroService.asignarRol(this.rolSeleccionado, res.id_usuario, this.turno, this.rolSeleccionado)
+              .subscribe({
+                next: () => {
+                  this.mensaje = `Usuario y Rol registrados exitosamente. (ID: ${res.id_usuario})`;
+                  this.finalizarRegistro();
+                },
+                error: (err) => {
+                  this.mensaje = `Usuario creado, pero falló la asignación de rol: ${err.error?.error}`;
+                  this.finalizarRegistro();
+                }
+              });
+          } else {
+            this.mensaje = `Usuario registrado exitosamente. ID: ${res.id_usuario}`;
+            this.finalizarRegistro();
+          }
         },
         error: (err) => {
           this.mensaje = `Error: ${err.error?.error || 'No se pudo registrar el usuario'}`;
           this.cdr.detectChanges();
         },
       });
+  }
+
+  finalizarRegistro() {
+    this.correo = '';
+    this.nombre = '';
+    this.contrasena = '';
+    this.estado = 'activo';
+    this.turno = 'mañana';
+    this.cargarUsuarios();
+    this.cargarAdministradores();
+    this.cargarVendedores();
+    this.cdr.detectChanges();
   }
 
   asignarRol(): void {
@@ -199,8 +234,8 @@ export class Registro implements OnInit {
     this.contrasena = '';
   }
 
-
   eliminarUsuario(id_usuario: number): void {
+    if(!confirm('¿Estás seguro de eliminar físicamente este usuario? Esto no se puede deshacer.')) return;
     this.registroService.eliminarUsuario(id_usuario).subscribe({
       next: (res) => {
         this.mensaje = res.message;
@@ -210,7 +245,7 @@ export class Registro implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.mensaje = `Error: ${err.error?.error || 'No se pudo eliminar el usuario'}`;
+        this.mensaje = `${err.error?.error || 'No se pudo eliminar el usuario'}`;
         this.cdr.detectChanges();
       },
     });
@@ -221,7 +256,7 @@ export class Registro implements OnInit {
     this.correo = '';
     this.nombre = '';
     this.contrasena = '';
-    this.estado = '';
+    this.estado = 'activo';
     this.errorCorreo = '';
     this.errorPass = '';
   }
@@ -233,7 +268,6 @@ export class Registro implements OnInit {
     this.turno = usuario.Turno;
   }
 
-
   limpiarFormularioRol(): void {
     this.editandoRol = false;
     this.usuarioSeleccionado = null;
@@ -242,23 +276,22 @@ export class Registro implements OnInit {
   }
 
   toggleEstado(usuario: any) {
-  const estadoActual = (usuario.estado || '').toLowerCase();
-const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+    const estadoActual = (usuario.estado || '').toLowerCase();
+    const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
 
-  this.registroService.modificarUsuario(
-    usuario.id_usuario,
-    usuario.nombre,
-    nuevoEstado
-  ).subscribe({
-    next: (res) => {
-      usuario.estado = nuevoEstado;
-      this.mensaje = res.message;
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      this.mensaje = `Error: ${err.error?.error || 'No se pudo cambiar estado'}`;
-    }
-  });
-}
-
+    this.registroService.modificarUsuario(
+      usuario.id_usuario,
+      usuario.nombre,
+      nuevoEstado
+    ).subscribe({
+      next: (res) => {
+        usuario.estado = nuevoEstado;
+        this.mensaje = res.message;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.mensaje = `Error: ${err.error?.error || 'No se pudo cambiar estado'}`;
+      }
+    });
+  }
 }

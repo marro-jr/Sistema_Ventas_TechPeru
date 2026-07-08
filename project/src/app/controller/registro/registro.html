@@ -64,40 +64,42 @@
   <div class="row g-4 mb-5">
 
     <!-- Registrar / Modificar usuario -->
-    <div class="col-lg-6">
+    <div class="col-lg-7">
       <div class="card border-0 h-100" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
         <div class="card-header border-0 py-3 px-4" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
           <div class="d-flex align-items-center gap-2">
             <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
             <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">
-              {{ idUsuarioEditando ? 'Modificar Usuario' : 'Nuevo Usuario' }}
+              {{ idUsuarioEditando ? 'Modificar Usuario' : 'Nuevo Usuario (Con Rol)' }}
             </h6>
           </div>
         </div>
 
         <div class="card-body p-4">
           <form>
-            <div class="mb-3">
-              <label for="correo" class="form-label fw-medium text-uppercase text-muted"
-                style="font-size: 0.68rem; letter-spacing: 0.8px;">
-                Correo electrónico
-              </label>
-              <input type="email" class="form-control form-control-sm" id="correo" [(ngModel)]="correo" maxlength="50"
-                name="correo" [disabled]="idUsuarioEditando !== null"
-                style="border-color: #dee2e6; border-radius: 6px;">
-              <span *ngIf="errorCorreo" class="text-danger" style="font-size: 0.75rem;">{{ errorCorreo }}</span>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="correo" class="form-label fw-medium text-uppercase text-muted"
+                  style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                  Correo electrónico
+                </label>
+                <input type="email" class="form-control form-control-sm" id="correo" [(ngModel)]="correo" maxlength="50"
+                  name="correo" [disabled]="idUsuarioEditando !== null"
+                  style="border-color: #dee2e6; border-radius: 6px;">
+                <span *ngIf="errorCorreo" class="text-danger" style="font-size: 0.75rem;">{{ errorCorreo }}</span>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="nombre" class="form-label fw-medium text-uppercase text-muted"
+                  style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                  Nombre completo
+                </label>
+                <input type="text" class="form-control form-control-sm" id="nombre" [(ngModel)]="nombre" maxlength="50"
+                  name="nombre" style="border-color: #dee2e6; border-radius: 6px;">
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label for="nombre" class="form-label fw-medium text-uppercase text-muted"
-                style="font-size: 0.68rem; letter-spacing: 0.8px;">
-                Nombre completo
-              </label>
-              <input type="text" class="form-control form-control-sm" id="nombre" [(ngModel)]="nombre" maxlength="50"
-                name="nombre" style="border-color: #dee2e6; border-radius: 6px;">
-            </div>
-
-            <div class="mb-3">
+            <div class="mb-3 position-relative">
               <label for="contrasena" class="form-label fw-medium text-uppercase text-muted"
                 style="font-size: 0.68rem; letter-spacing: 0.8px;">
                 Contraseña
@@ -105,25 +107,61 @@
               <input type="password" class="form-control form-control-sm" id="contrasena" [(ngModel)]="contrasena"
                 maxlength="50" name="contrasena" [disabled]="idUsuarioEditando !== null"
                 style="border-color: #dee2e6; border-radius: 6px;">
-              <span *ngIf="errorPass" class="text-danger" style="font-size: 0.75rem;">{{ errorPass }}</span>
+              
+              <!-- Password Requirements UI -->
+              <div *ngIf="!idUsuarioEditando" class="mt-2 password-reqs d-flex flex-wrap gap-2">
+                <span class="badge rounded-pill" [ngClass]="passwordValidations.length ? 'bg-success' : 'bg-light text-muted border'">9+ caract.</span>
+                <span class="badge rounded-pill" [ngClass]="passwordValidations.upper ? 'bg-success' : 'bg-light text-muted border'">1 Mayúscula</span>
+                <span class="badge rounded-pill" [ngClass]="passwordValidations.lower ? 'bg-success' : 'bg-light text-muted border'">1 Minúscula</span>
+                <span class="badge rounded-pill" [ngClass]="passwordValidations.number ? 'bg-success' : 'bg-light text-muted border'">1 Número</span>
+                <span class="badge rounded-pill" [ngClass]="passwordValidations.special ? 'bg-success' : 'bg-light text-muted border'">1 Especial</span>
+              </div>
             </div>
 
-            <div class="mb-4">
-              <label for="estado" class="form-label fw-medium text-uppercase text-muted"
-                style="font-size: 0.68rem; letter-spacing: 0.8px;">
-                Estado
-              </label>
-              <select class="form-select form-select-sm" id="estado" [(ngModel)]="estado" name="estado"
-                style="border-color: #dee2e6; border-radius: 6px;">
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
-              </select>
+            <div class="row">
+              <div class="col-md-4 mb-4">
+                <label for="estado" class="form-label fw-medium text-uppercase text-muted"
+                  style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                  Estado
+                </label>
+                <select class="form-select form-select-sm" id="estado" [(ngModel)]="estado" name="estado"
+                  style="border-color: #dee2e6; border-radius: 6px;">
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </div>
+
+              <!-- Role fields integrated directly into creation -->
+              <div class="col-md-4 mb-4" *ngIf="!idUsuarioEditando">
+                <label for="rolSeleccionado" class="form-label fw-medium text-uppercase text-muted"
+                  style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                  Asignar Rol
+                </label>
+                <select class="form-select form-select-sm" id="rolSeleccionado" [(ngModel)]="rolSeleccionado"
+                  name="rolSeleccionado" style="border-color: #dee2e6; border-radius: 6px;">
+                  <option value="administrador">Administrador</option>
+                  <option value="vendedor">Vendedor</option>
+                </select>
+              </div>
+
+              <div class="col-md-4 mb-4" *ngIf="!idUsuarioEditando">
+                <label for="turno" class="form-label fw-medium text-uppercase text-muted"
+                  style="font-size: 0.68rem; letter-spacing: 0.8px;">
+                  Turno
+                </label>
+                <select class="form-select form-select-sm" id="turno" [(ngModel)]="turno" name="turno"
+                  style="border-color: #dee2e6; border-radius: 6px;">
+                  <option value="mañana">Mañana</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="full time">Full Time</option>
+                </select>
+              </div>
             </div>
 
-            <button type="button" class="btn w-100 fw-semibold text-white"
+            <button type="button" class="btn w-100 fw-semibold text-white shadow-sm"
               style="background-color: #1a3a5c; border: none; border-radius: 8px; font-size: 0.85rem; padding: 9px;"
-              (click)="guardar()">
-              {{ idUsuarioEditando ? 'Guardar Cambios' : 'Registrar Usuario' }}
+              (click)="guardar()" [disabled]="!idUsuarioEditando && !isPasswordValid">
+              {{ idUsuarioEditando ? 'Guardar Cambios' : 'Registrar Usuario y Asignar Rol' }}
             </button>
 
             <button *ngIf="idUsuarioEditando" type="button" class="btn btn-secondary w-100 mt-2"
@@ -135,26 +173,30 @@
       </div>
     </div>
 
-    <!-- Asignar / modificar rol -->
-    <div class="col-lg-6">
+    <!-- Modificar Rol Aislado (Solo para edición) -->
+    <div class="col-lg-5">
       <div class="card border-0 h-100" style="border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);">
         <div class="card-header border-0 py-3 px-4" style="background: #1a3a5c; border-radius: 12px 12px 0 0;">
           <div class="d-flex align-items-center gap-2">
             <div style="width: 8px; height: 8px; background: #64b5f6; border-radius: 50%;"></div>
             <h6 class="mb-0 fw-semibold text-white text-uppercase" style="font-size: 0.72rem; letter-spacing: 1px;">
-              {{ editandoRol ? 'Modificar Turno' : 'Asignar Rol' }}
+              {{ editandoRol ? 'Modificar Turno' : 'Asignación Manual de Rol' }}
             </h6>
           </div>
         </div>
 
         <div class="card-body p-4">
+          <div class="alert alert-secondary small py-2 mb-3 border-0">
+            Utilice este panel para asignar o modificar el rol de un usuario existente a través de su ID.
+          </div>
+
           <div class="mb-3">
-            <label for="rolSeleccionado" class="form-label fw-medium text-uppercase text-muted"
+            <label for="rolSeleccionadoManual" class="form-label fw-medium text-uppercase text-muted"
               style="font-size: 0.68rem; letter-spacing: 0.8px;">
               Rol
             </label>
-            <select class="form-select form-select-sm" id="rolSeleccionado" [(ngModel)]="rolSeleccionado"
-              name="rolSeleccionado" [disabled]="editandoRol" style="border-color: #dee2e6; border-radius: 6px;">
+            <select class="form-select form-select-sm" id="rolSeleccionadoManual" [(ngModel)]="rolSeleccionado"
+              name="rolSeleccionadoManual" [disabled]="editandoRol" style="border-color: #dee2e6; border-radius: 6px;">
               <option value="" disabled>Seleccionar</option>
               <option value="administrador">Administrador</option>
               <option value="vendedor">Vendedor</option>
@@ -172,11 +214,11 @@
           </div>
 
           <div class="mb-4">
-            <label for="turno" class="form-label fw-medium text-uppercase text-muted"
+            <label for="turnoManual" class="form-label fw-medium text-uppercase text-muted"
               style="font-size: 0.68rem; letter-spacing: 0.8px;">
               Turno
             </label>
-            <select class="form-select form-select-sm" id="turno" [(ngModel)]="turno" name="turno"
+            <select class="form-select form-select-sm" id="turnoManual" [(ngModel)]="turno" name="turnoManual"
               style="border-color: #dee2e6; border-radius: 6px;">
               <option value="" disabled>Seleccionar</option>
               <option value="mañana">Mañana</option>
