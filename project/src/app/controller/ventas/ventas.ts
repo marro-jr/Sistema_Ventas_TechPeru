@@ -10,6 +10,7 @@ import { VentasService } from '../../services/ventas-service';
   templateUrl: './ventas.html',
   styleUrl: './ventas.css',
 })
+// Controlador para gestionar el terminal de Ventas
 export class Ventas implements OnInit {
   idVentaEditando: number | null = null;
 

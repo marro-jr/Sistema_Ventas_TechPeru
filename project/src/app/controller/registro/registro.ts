@@ -16,6 +16,7 @@ import { RegistroService } from '../../services/registro-service';
   templateUrl: './registro.html',
   styleUrl: './registro.css',
 })
+// Controlador para el Registro de usuarios
 export class Registro implements OnInit {
   correo: string = '';
   nombre: string = '';

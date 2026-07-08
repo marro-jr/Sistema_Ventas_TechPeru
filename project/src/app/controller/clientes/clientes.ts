@@ -10,6 +10,10 @@ import { ClientesService } from '../../services/clientes-service';
   templateUrl: './clientes.html',
   styleUrl: './clientes.css',
 })
+/**
+ * Componente principal para la gestión de Clientes.
+ * Incluye validaciones, rediseño visual y protección de llave foránea.
+ */
 export class Clientes implements OnInit {
   idClienteEditando: number | null = null;
 

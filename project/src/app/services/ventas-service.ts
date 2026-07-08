@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 @Injectable({
   providedIn: 'root',
 })
+// Servicio para las peticiones de Ventas
 export class VentasService {
   apiUrl = 'http://localhost:3000';
 

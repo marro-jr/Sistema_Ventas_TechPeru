@@ -10,6 +10,10 @@ import { ProductoService } from '../../services/producto-service';
   templateUrl: './mantenimiento.html',
   styleUrl: './mantenimiento.css',
 })
+/**
+ * Componente principal para el inventario y Mantenimiento de Productos.
+ * Protegido contra eliminación de productos vinculados a ventas activas.
+ */
 export class Mantenimiento implements OnInit {
   idProductoEditando: number | null = null;
 

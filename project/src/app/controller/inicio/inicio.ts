@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
   templateUrl: './inicio.html',
   styleUrl: './inicio.css',
 })
+// Controlador para la vista principal de Inicio
 export class Inicio implements OnInit {
 
   nombre: string = '';

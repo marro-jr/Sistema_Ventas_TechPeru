@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 @Injectable({
   providedIn: 'root',
 })
+// Servicio para las peticiones de Registro
 export class RegistroService {
 
   apiUrl = 'http://localhost:3000/registro';

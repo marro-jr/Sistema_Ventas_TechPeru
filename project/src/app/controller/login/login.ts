@@ -17,7 +17,8 @@ import { CommonModule } from '@angular/common';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class Login {
+// Controlador de autenticación y Login
+export class Login implements OnInit {
   correo: string = '';
   contrasena: string = '';
   cargando: boolean = false;
