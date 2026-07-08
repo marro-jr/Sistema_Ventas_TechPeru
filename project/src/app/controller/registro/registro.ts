@@ -78,7 +78,7 @@ export class Registro implements OnInit {
       .insertarUsuario(this.correo, this.nombre, this.contrasena, this.estado)
       .subscribe({
         next: (res) => {
-          this.ultimoIdRegistrado = res.id_usuario; // ← guarda el ID
+          this.ultimoIdRegistrado = res.id_usuario; 
           this.mensaje = `Usuario registrado exitosamente. Su ID es: ${res.id_usuario}`;
           this.correo = '';
           this.nombre = '';
@@ -245,10 +245,7 @@ export class Registro implements OnInit {
   const estadoActual = (usuario.estado || '').toLowerCase();
 const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
 
-  this.registroService.modificarUsuario(
-    usuario.id_usuario,
-    usuario.nombre,
-    nuevoEstado
+  this.registroService.modificarUsuario(usuario.id_usuario, usuario.nombre, nuevoEstado
   ).subscribe({
     next: (res) => {
       usuario.estado = nuevoEstado;

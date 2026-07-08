@@ -12,7 +12,7 @@ const puerto = 3000;
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",
+  password: "12345",
   database: "db_tech_peru",
   port: 3306,
 });
