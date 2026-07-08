@@ -3,6 +3,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ReportesService } from '../../services/reportes.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-reportes',
@@ -14,12 +16,15 @@ import { ReportesService } from '../../services/reportes.service';
 export class Reportes implements OnInit {
   rol: string = '';
   reporteSeleccionado: string = '';
-  periodo: number = 7; // Por defecto 7 días
-  
-  resultadosEstadisticas: any = null;
-  resultadosIngresos: any = null;
-  resultadosEliminaciones: any[] = [];
-  
+
+  filtroRango: string = 'semana';
+  fechaInicio: string = '';
+  fechaFin: string = '';
+  periodo: number = 7;
+
+  resultadosAnalitico: any = null;
+  resultadosEliminaciones: any[] | null = null;
+
   cargando: boolean = false;
   mensaje: string = '';
 
@@ -34,62 +39,110 @@ export class Reportes implements OnInit {
     if (this.rol !== 'administrador') {
       this.router.navigate(['/inicio']);
     }
+    this.calcularFechasParaRango('semana');
   }
 
   volver(): void {
     this.router.navigate(['/inicio']);
   }
 
-  seleccionarReporte(tipo: string): void {
+  seleccionarReporte(tipo: 'estadisticas' | 'ingresos' | 'eliminaciones') {
     this.reporteSeleccionado = tipo;
-    this.limpiarResultados();
-    this.generarPrevisualizacion();
+    this.resultadosAnalitico = null;
+    this.resultadosEliminaciones = null;
+    this.mensaje = '';
+    
+    if (this.fechaInicio && this.fechaFin) {
+      if (new Date(this.fechaInicio) > new Date(this.fechaFin)) {
+        this.mensaje = 'La fecha de inicio no puede ser posterior a la fecha de fin.';
+        return;
+      }
+      this.ejecutarConsulta();
+    }
+  }
+
+  cambiarPeriodo(): void {
+    const hoy = new Date();
+    this.fechaFin = hoy.toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(d.getDate() - this.periodo);
+    this.fechaInicio = d.toISOString().split('T')[0];
+    if (this.reporteSeleccionado) {
+      this.ejecutarConsulta();
+    }
   }
 
   limpiarResultados(): void {
-    this.resultadosEstadisticas = null;
-    this.resultadosIngresos = null;
-    this.resultadosEliminaciones = [];
+    this.resultadosAnalitico = null;
+    this.resultadosEliminaciones = null;
     this.mensaje = '';
   }
 
+  calcularFechasParaRango(rango: string): void {
+    const hoy = new Date();
+    this.fechaFin = hoy.toISOString().split('T')[0];
+    if (rango === 'hoy') {
+      this.fechaInicio = this.fechaFin;
+    } else if (rango === 'semana') {
+      const d = new Date(); d.setDate(d.getDate() - 7);
+      this.fechaInicio = d.toISOString().split('T')[0];
+    } else if (rango === 'mes') {
+      const d = new Date(); d.setDate(d.getDate() - 30);
+      this.fechaInicio = d.toISOString().split('T')[0];
+    } else if (rango === 'anio') {
+      const d = new Date(); d.setFullYear(d.getFullYear() - 1);
+      this.fechaInicio = d.toISOString().split('T')[0];
+    }
+  }
+
+  aplicarFiltroRapido(): void {
+    if (this.filtroRango !== 'custom') {
+      this.calcularFechasParaRango(this.filtroRango);
+    }
+    if (this.reporteSeleccionado) {
+      this.generarPrevisualizacion();
+    }
+  }
+
   generarPrevisualizacion(): void {
+    if (!this.fechaInicio || !this.fechaFin) {
+      this.mensaje = 'Por favor selecciona un rango de fechas válido.';
+      return;
+    }
+    if (this.fechaInicio > this.fechaFin) {
+      this.mensaje = 'La fecha de inicio no puede ser mayor que la fecha de fin.';
+      return;
+    }
+    this.ejecutarConsulta();
+  }
+
+  ejecutarConsulta(): void {
     this.cargando = true;
-    if (this.reporteSeleccionado === 'estadisticas') {
-      this.reportesService.obtenerEstadisticasVentas(this.periodo).subscribe({
+    this.mensaje = '';
+
+    if (this.reporteSeleccionado === 'estadisticas' || this.reporteSeleccionado === 'ingresos') {
+      this.reportesService.obtenerAnaliticoVentas(this.fechaInicio, this.fechaFin).subscribe({
         next: (data) => {
-          this.resultadosEstadisticas = data;
+          this.resultadosAnalitico = data;
           this.cargando = false;
           this.cdr.detectChanges();
         },
         error: (err) => {
-          this.mensaje = err.error?.error || 'Error al obtener estadísticas';
-          this.cargando = false;
-          this.cdr.detectChanges();
-        }
-      });
-    } else if (this.reporteSeleccionado === 'ingresos') {
-      this.reportesService.obtenerIngresos(this.periodo).subscribe({
-        next: (data) => {
-          this.resultadosIngresos = data;
-          this.cargando = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          this.mensaje = err.error?.error || 'Error al obtener ingresos';
+          this.mensaje = err.error?.error || 'Error al obtener la información de ventas.';
           this.cargando = false;
           this.cdr.detectChanges();
         }
       });
     } else if (this.reporteSeleccionado === 'eliminaciones') {
-      this.reportesService.obtenerEliminaciones(this.periodo).subscribe({
+      this.reportesService.obtenerEliminaciones(this.fechaInicio, this.fechaFin).subscribe({
         next: (data) => {
           this.resultadosEliminaciones = data;
           this.cargando = false;
           this.cdr.detectChanges();
         },
         error: (err) => {
-          this.mensaje = err.error?.error || 'Error al obtener eliminaciones (posiblemente la tabla no exista)';
+          this.mensaje = err.error?.error || 'Error al obtener el historial de eliminaciones.';
+          this.resultadosEliminaciones = [];
           this.cargando = false;
           this.cdr.detectChanges();
         }
@@ -97,82 +150,302 @@ export class Reportes implements OnInit {
     }
   }
 
-  cambiarPeriodo(): void {
-    if (this.reporteSeleccionado) {
-      this.generarPrevisualizacion();
-    }
+  formatearMonto(valor: any): string {
+    return (parseFloat(valor) || 0).toFixed(2);
   }
 
-  async descargarPDF(): Promise<void> {
+  // ─── GENERADOR DE PDF PROFESIONAL ──────────────────────────────────────────
+  async descargarPDF() {
+    if (!this.reporteSeleccionado) {
+      this.mensaje = 'Selecciona un tipo de reporte primero.';
+      return;
+    }
+
+    if (
+      (this.reporteSeleccionado === 'estadisticas' && !this.resultadosAnalitico) ||
+      (this.reporteSeleccionado === 'ingresos' && !this.resultadosAnalitico) ||
+      (this.reporteSeleccionado === 'eliminaciones' && !this.resultadosEliminaciones)
+    ) {
+      this.mensaje = 'Primero genera una previsualización con datos antes de descargar el PDF.';
+      return;
+    }
+
     try {
-      // Importación dinámica de jspdf y autotable
-      const { jsPDF } = await import('jspdf');
-      await import('jspdf-autotable');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW  = doc.internal.pageSize.getWidth();
+      const pageH  = doc.internal.pageSize.getHeight();
+      const M      = 14; // margen lateral
+      const fechaEmision = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
+      const horaEmision  = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const nReporte     = `REP-${Date.now().toString().slice(-6)}`;
 
-      const doc = new jsPDF();
-      const fechaActual = new Date().toLocaleDateString();
+      const titulos: Record<string, string> = {
+        estadisticas: 'REPORTE DETALLADO DE VENTAS',
+        ingresos:     'REPORTE DE INGRESOS DIARIOS',
+        eliminaciones:'HISTORIAL DE ELIMINACIONES'
+      };
+      const nroMap: Record<string, string> = { estadisticas: '01', ingresos: '02', eliminaciones: '03' };
+      const titulo     = titulos[this.reporteSeleccionado] || 'REPORTE ADMINISTRATIVO';
+      const nroInforme = nroMap[this.reporteSeleccionado] || '00';
 
-      doc.setFontSize(18);
-      doc.text('Reporte Administrativo - TechPeru', 14, 22);
-      
-      doc.setFontSize(11);
-      doc.setTextColor(100);
-      doc.text(`Fecha de generación: ${fechaActual}`, 14, 30);
-      doc.text(`Periodo analizado: Ultimos ${this.periodo} dias`, 14, 36);
+      // ── PALETA MONOCROMÁTICA ──
+      const NEGRO  : [number,number,number] = [20,  20,  20];
+      const OSCURO : [number,number,number] = [60,  60,  60];
+      const GRIS   : [number,number,number] = [120, 120, 120];
+      const CLARO  : [number,number,number] = [215, 215, 215];
+      const FONDO  : [number,number,number] = [245, 245, 245];
+      const BLANCO : [number,number,number] = [255, 255, 255];
 
-      if (this.reporteSeleccionado === 'estadisticas' && this.resultadosEstadisticas) {
-        doc.text('Tipo: Estadisticas de Ventas (Max, Min, Promedio)', 14, 42);
-        (doc as any).autoTable({
-          startY: 50,
-          head: [['Venta Maxima', 'Venta Minima', 'Venta Promedio', 'Total Ventas']],
-          body: [[
-            `S/ ${this.resultadosEstadisticas.venta_maxima || 0}`,
-            `S/ ${this.resultadosEstadisticas.venta_minima || 0}`,
-            `S/ ${Number(this.resultadosEstadisticas.venta_promedio || 0).toFixed(2)}`,
-            this.resultadosEstadisticas.total_ventas || 0
-          ]],
-          theme: 'grid',
-          headStyles: { fillColor: [51, 65, 85] }
-        });
-      } else if (this.reporteSeleccionado === 'ingresos' && this.resultadosIngresos) {
-        doc.text('Tipo: Reporte de Ingresos Totales', 14, 42);
-        (doc as any).autoTable({
-          startY: 50,
-          head: [['Ingresos Totales (SUM)', 'Cantidad de Ventas (COUNT)']],
-          body: [[
-            `S/ ${this.resultadosIngresos.ingresos_totales || 0}`,
-            this.resultadosIngresos.cantidad_ventas || 0
-          ]],
-          theme: 'grid',
-          headStyles: { fillColor: [51, 65, 85] }
-        });
-      } else if (this.reporteSeleccionado === 'eliminaciones' && this.resultadosEliminaciones) {
-        doc.text('Tipo: Historial de Eliminaciones Fisicas', 14, 42);
-        const body = this.resultadosEliminaciones.map(e => [
-          e.id_historial || '-', 
-          e.tabla_afectada || '-', 
-          e.id_registro_eliminado || '-', 
-          e.fecha_eliminacion ? new Date(e.fecha_eliminacion).toLocaleString() : '-'
-        ]);
-        
-        if (body.length === 0) {
-           body.push(['No hay datos', '-', '-', '-']);
+      // Cargar logo
+      const logoImg = new Image();
+      logoImg.src = '/logo_empresa.png';
+      await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = () => resolve(null); });
+
+      // ─── HELPER: membrete en cada página ─────────────────────────────────
+      const membrete = (pageNum: number, totalPages: number) => {
+        // Banda superior negra
+        doc.setFillColor(...NEGRO);
+        doc.rect(0, 0, pageW, 16, 'F');
+
+        let logoEndX = M;
+        if (logoImg.complete && logoImg.naturalWidth > 0) {
+          const lh = 10; const lw = (logoImg.width * lh) / logoImg.height;
+          doc.addImage(logoImg, 'PNG', M, 3, lw, lh);
+          logoEndX = M + lw + 3;
         }
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...BLANCO);
+        doc.text('TechPerú S.A.C.', logoEndX, 9);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...CLARO);
+        doc.text('www.techperu-store.com.pe  |  RUC: 20123456789  |  San Isidro, Lima, Perú', logoEndX, 14);
+        doc.setTextColor(...CLARO); doc.setFontSize(7.5);
+        doc.text(`${nReporte}  |  Pág. ${pageNum} de ${totalPages}`, pageW - M, 11, { align: 'right' });
 
-        (doc as any).autoTable({
-          startY: 50,
-          head: [['ID Historial', 'Tabla Afectada', 'ID Eliminado', 'Fecha de Eliminacion']],
-          body: body,
+        // Banda gris oscuro del tipo de reporte
+        doc.setFillColor(...OSCURO);
+        doc.rect(0, 16, pageW, 7, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...BLANCO);
+        doc.text(`INFORME N° ${nroInforme}  —  ${titulo}`, M, 21);
+
+        // Footer gris claro
+        doc.setFillColor(...FONDO);
+        doc.rect(0, pageH - 10, pageW, 10, 'F');
+        doc.setDrawColor(...CLARO); doc.setLineWidth(0.3);
+        doc.line(0, pageH - 10, pageW, pageH - 10);
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); doc.setTextColor(...GRIS);
+        doc.text('DOCUMENTO CONFIDENCIAL — Generado automáticamente por el Sistema de Ventas TechPerú S.A.C.', M, pageH - 4.5);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Emitido: ${fechaEmision} ${horaEmision}`, pageW - M, pageH - 4.5, { align: 'right' });
+      };
+
+      // ─── PRIMERA PÁGINA ───────────────────────────────────────────────────
+      membrete(1, 1);
+
+      let Y = 28;
+
+      // Título principal
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(...NEGRO);
+      doc.text(titulo, M, Y + 8);
+      doc.setDrawColor(...CLARO); doc.setLineWidth(0.5);
+      doc.line(M, Y + 11, pageW - M, Y + 11);
+      Y += 17;
+
+      // Bloque de metadatos
+      doc.setFillColor(...FONDO); doc.setDrawColor(...CLARO); doc.setLineWidth(0.3);
+      doc.rect(M, Y, pageW - M * 2, 26, 'FD');
+      const c2 = pageW / 2 + 2;
+      const metaData = [
+        { lbl: 'N° DE REPORTE', val: nReporte,                                    x: M + 4 },
+        { lbl: 'FECHA DE EMISIÓN', val: fechaEmision,                              x: c2 },
+        { lbl: 'PERIODO ANALIZADO', val: `Del ${this.fechaInicio} al ${this.fechaFin}`, x: M + 4 },
+        { lbl: 'ELABORADO POR', val: 'Sistema de Ventas TechPerú S.A.C.',         x: c2 },
+      ];
+      metaData.forEach((m, i) => {
+        const ry = Y + (i < 2 ? 7 : 18);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(6); doc.setTextColor(...GRIS);
+        doc.text(m.lbl, m.x, ry);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...NEGRO);
+        doc.text(m.val, m.x, ry + 4.5);
+      });
+      Y += 32;
+
+      // Helper: separador de sección (estilo limpio, sin fondo oscuro)
+      const seccion = (label: string) => {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...NEGRO);
+        doc.text(label.toUpperCase(), M, Y + 4);
+        Y += 8;
+      };
+
+      // Helper: estilos comunes para las tablas del PDF (estilo Bootstrap)
+      const headColor = [248, 250, 252] as [number, number, number];
+      const headText  = [100, 116, 139] as [number, number, number];
+      const bodyText  = [33, 37, 41] as [number, number, number];
+      const lineColor = [230, 230, 230] as [number, number, number];
+
+      const onNuevaPagina = (d: any) => { if (d.pageNumber > 1) membrete(d.pageNumber, 99); };
+
+      if (this.reporteSeleccionado === 'estadisticas' && this.resultadosAnalitico) {
+        const r = this.resultadosAnalitico.resumen;
+
+        // Resumen como tabla
+        seccion('RESUMEN DE ESTADÍSTICAS');
+        autoTable(doc, {
+          startY: Y,
+          head: [['MÉTRICA', 'VALOR']],
+          body: [
+            ['Venta Máxima',              `S/ ${this.formatearMonto(r?.venta_maxima || 0)}`],
+            ['Venta Mínima',              `S/ ${this.formatearMonto(r?.venta_minima || 0)}`],
+            ['Venta Promedio',            `S/ ${this.formatearMonto(r?.venta_promedio || 0)}`],
+            ['Total Transacciones',       `${r?.total_ventas || 0} ventas`],
+            ['Ingresos Totales',          `S/ ${this.formatearMonto(r?.ingresos_totales || 0)}`],
+          ],
           theme: 'grid',
-          headStyles: { fillColor: [51, 65, 85] }
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: bodyText },
+          columnStyles: { 1: { halign: 'right', textColor: bodyText } },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
+        });
+        Y = (doc as any).lastAutoTable.finalY + 6;
+
+        seccion('TOP 5 MEJORES VENTAS');
+        const topBody = (this.resultadosAnalitico.topVentas || []).map((v: any, i: number) => [
+          `${i + 1}°`, `#${v.id_venta}`, new Date(v.fecha).toLocaleDateString('es-PE'), `S/ ${this.formatearMonto(v.total)}`
+        ]);
+        if (!topBody.length) topBody.push(['-', '-', 'Sin ventas en el periodo seleccionado', '-']);
+        autoTable(doc, {
+          startY: Y, head: [['POSICIÓN', 'ID VENTA', 'FECHA', 'MONTO']],
+          body: topBody, theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: bodyText },
+          columnStyles: { 0: { cellWidth: 20 }, 3: { halign: 'right', fontStyle: 'bold', textColor: bodyText } },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
+        });
+        Y = (doc as any).lastAutoTable.finalY + 6;
+
+        seccion('LAS 5 VENTAS MÁS BAJAS');
+        const botBody = (this.resultadosAnalitico.bottomVentas || []).map((v: any, i: number) => [
+          `${i + 1}°`, `#${v.id_venta}`, new Date(v.fecha).toLocaleDateString('es-PE'), `S/ ${this.formatearMonto(v.total)}`
+        ]);
+        if (!botBody.length) botBody.push(['-', '-', 'Sin ventas en el periodo seleccionado', '-']);
+        autoTable(doc, {
+          startY: Y, head: [['POSICIÓN', 'ID VENTA', 'FECHA', 'MONTO']],
+          body: botBody, theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: bodyText },
+          columnStyles: { 0: { cellWidth: 20 }, 3: { halign: 'right', fontStyle: 'bold', textColor: bodyText } },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
+        });
+
+      } else if (this.reporteSeleccionado === 'ingresos' && this.resultadosAnalitico) {
+        const r = this.resultadosAnalitico.resumen;
+
+        seccion('RESUMEN DE INGRESOS');
+        autoTable(doc, {
+          startY: Y,
+          head: [['INGRESOS TOTALES', 'CANTIDAD DE VENTAS']],
+          body: [
+            [`S/ ${this.formatearMonto(r?.ingresos_totales || 0)}`, `${r?.total_ventas || 0}`],
+          ],
+          theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 10, textColor: bodyText, fontStyle: 'bold' },
+          columnStyles: { 1: { halign: 'right' } },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
+        });
+        Y = (doc as any).lastAutoTable.finalY + 6;
+
+        seccion('DESGLOSE DIARIO DE INGRESOS');
+        const desBody = (this.resultadosAnalitico.desgloseDiario || []).map((d: any) => [
+          new Date(d.fecha_diaria).toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }),
+          `${d.cantidad_diaria}`,
+          `S/ ${this.formatearMonto(d.total_diario)}`
+        ]);
+        if (!desBody.length) desBody.push(['Sin movimientos en el periodo', '-', '-']);
+        const totalGlobal = (this.resultadosAnalitico.desgloseDiario || []).reduce((a: number, d: any) => a + parseFloat(d.total_diario || 0), 0);
+        const totalOps    = (this.resultadosAnalitico.desgloseDiario || []).reduce((a: number, d: any) => a + parseInt(d.cantidad_diaria || 0), 0);
+        autoTable(doc, {
+          startY: Y, head: [['FECHA DE OPERACIÓN', 'N° OPERACIONES', 'TOTAL RECAUDADO']],
+          body: desBody,
+          foot: [['TOTAL GENERAL DEL PERIODO', `${totalOps} ventas`, `S/ ${this.formatearMonto(totalGlobal)}`]],
+          theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          footStyles: { fillColor: [240, 240, 240], textColor: bodyText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: bodyText },
+          columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right', fontStyle: 'bold', textColor: bodyText } },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
+        });
+
+      } else if (this.reporteSeleccionado === 'eliminaciones' && this.resultadosEliminaciones) {
+        const total = this.resultadosEliminaciones.length;
+
+        seccion('RESUMEN DE AUDITORÍA');
+        autoTable(doc, {
+          startY: Y,
+          head: [['TOTAL REGISTROS ELIMINADOS']],
+          body: [
+            [`${total} registros`],
+          ],
+          theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 10, textColor: bodyText, fontStyle: 'bold' },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
+        });
+        Y = (doc as any).lastAutoTable.finalY + 6;
+
+        seccion('AUDITORÍA DE ELIMINACIONES');
+        const elBody = (this.resultadosEliminaciones || []).map((e, i) => [
+          `${i + 1}`,
+          `#${e.id_registro || 'N/A'}`,
+          (e.tabla || '-').toUpperCase(),
+          e.fecha ? new Date(e.fecha).toLocaleDateString('es-PE') : '-',
+          e.fecha ? new Date(e.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '-',
+        ]);
+        if (!elBody.length) elBody.push(['-', '-', 'Sin registros en el periodo seleccionado', '-', '-']);
+        autoTable(doc, {
+          startY: Y, head: [['N°', 'ID REGISTRO', 'TABLA AFECTADA', 'FECHA', 'HORA']],
+          body: elBody, theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: bodyText },
+          columnStyles: {
+            0: { cellWidth: 15 },
+            1: { cellWidth: 30, fontStyle: 'bold' }
+          },
+          margin: { left: M, right: M, bottom: 14 }, didDrawPage: onNuevaPagina
         });
       }
 
-      doc.save(`reporte_${this.reporteSeleccionado}_${fechaActual}.pdf`);
+      // ─── MENSAJE FINAL ─────────────────────────────────────────────────
+      let fY = (doc as any).lastAutoTable?.finalY ?? Y;
+      fY += 10;
+      if (fY + 15 > pageH - 14) { doc.addPage(); fY = 30; }
+
+      doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.3);
+      doc.line(M, fY, pageW - M, fY);
+
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); doc.setTextColor(180, 180, 180);
+      doc.text(
+        'Documento generado automáticamente. Para mayor información, contactar al área de Administración de TechPerú S.A.C.',
+        M, fY + 5, { maxWidth: pageW - M * 2 }
+      );
+
+      // ─── MEMBRETE EN TODAS LAS PÁGINAS ───────────────────────────────────
+      const totalPag = (doc as any).internal.pages.length - 1;
+      for (let p = 1; p <= totalPag; p++) {
+        doc.setPage(p);
+        membrete(p, totalPag);
+      }
+
+      doc.save(`TechPeru_${titulo.replace(/ /g, '_')}_${this.fechaInicio}_al_${this.fechaFin}.pdf`);
 
     } catch (error) {
       console.error(error);
-      this.mensaje = 'Error: Debes ejecutar en la terminal: npm install jspdf jspdf-autotable';
+      this.mensaje = 'Error al generar el PDF. Revisa la consola del navegador.';
       this.cdr.detectChanges();
     }
   }

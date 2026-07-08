@@ -10,18 +10,19 @@ export class ReportesService {
 
   constructor(private http: HttpClient) {}
 
-  obtenerEstadisticasVentas(dias?: number): Observable<any> {
-    const query = dias ? `?dias=${dias}` : '';
-    return this.http.get(`${this.apiUrl}/reportes/ventas-estadisticas${query}`);
+  obtenerAnaliticoVentas(fechaInicio?: string, fechaFin?: string): Observable<any> {
+    let query = '';
+    if (fechaInicio && fechaFin) {
+      query = `?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+    }
+    return this.http.get(`${this.apiUrl}/reportes/ventas-analitico${query}`);
   }
 
-  obtenerIngresos(dias?: number): Observable<any> {
-    const query = dias ? `?dias=${dias}` : '';
-    return this.http.get(`${this.apiUrl}/reportes/ingresos${query}`);
-  }
-
-  obtenerEliminaciones(dias?: number): Observable<any> {
-    const query = dias ? `?dias=${dias}` : '';
+  obtenerEliminaciones(fechaInicio?: string, fechaFin?: string): Observable<any> {
+    let query = '';
+    if (fechaInicio && fechaFin) {
+      query = `?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+    }
     return this.http.get(`${this.apiUrl}/reportes/eliminaciones${query}`);
   }
 }

@@ -277,14 +277,14 @@ export class Registro implements OnInit {
   editarRol(rol: string, usuario: any): void {
     this.editandoRol = true;
     this.rolSeleccionado = rol;
-    this.usuarioSeleccionado = usuario.id_usuario ?? usuario.ID;
-    this.turno = usuario.Turno;
+    this.usuarioSeleccionado = usuario.id_usuario;
+    this.turno = usuario.turno;
   }
 
   limpiarFormularioRol(): void {
     this.editandoRol = false;
     this.usuarioSeleccionado = null;
-    this.turno = '';
+    this.turno = 'mañana';
     this.rolSeleccionado = 'administrador';
   }
 

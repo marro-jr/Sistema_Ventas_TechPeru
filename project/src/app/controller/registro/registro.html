@@ -102,7 +102,7 @@
                 style="font-size: 0.68rem; letter-spacing: 0.8px;">
                 Contraseña
               </label>
-              <input type="text" class="form-control form-control-sm" id="contrasena" [(ngModel)]="contrasena"
+              <input type="password" class="form-control form-control-sm" id="contrasena" [(ngModel)]="contrasena"
                 maxlength="50" name="contrasena" [disabled]="idUsuarioEditando !== null"
                 style="border-color: #dee2e6; border-radius: 6px;">
               
@@ -275,7 +275,7 @@
             <tr *ngFor="let usuario of usuarios">
               <td class="ps-4 py-3">
                 <span class="badge" style="background-color: #eff6ff; color: #1e293b; font-weight: 600;">
-                  {{ usuario.id_usuario }}
+                  {{ usuario.id_usuario_usuario }}
                 </span>
               </td>
               <td class="py-3 text-muted">{{ usuario.correo }}</td>
@@ -298,7 +298,7 @@
                     {{ usuario.estado?.toLowerCase() === 'activo' ? 'Desactivar' : 'Activar' }}
                   </button>
 
-                  <button class="btn btn-sm text-white" style="background: #dc2626; border-color: #dc2626;" type="button" (click)="eliminarUsuario(usuario.id_usuario)">
+                  <button class="btn btn-sm text-white" style="background: #dc2626; border-color: #dc2626;" type="button" (click)="eliminarUsuario(usuario.id_usuario_usuario)">
                     Eliminar
                   </button>
                 </div>
@@ -342,15 +342,15 @@
             <tr *ngFor="let admin of administradores">
               <td class="ps-4 py-3">
                 <span class="badge" style="background-color: #eff6ff; color: #1e293b; font-weight: 600;">
-                  {{ admin.ID }}
+                  {{ admin.id_usuario }}
                 </span>
               </td>
-              <td class="py-3 text-muted">{{ admin.Correo }}</td>
-              <td class="py-3 fw-medium">{{ admin.Nombre }}</td>
-              <td class="py-3 text-muted">{{ admin.Turno }}</td>
+              <td class="py-3 text-muted">{{ admin.correo }}</td>
+              <td class="py-3 fw-medium">{{ admin.nombre }}</td>
+              <td class="py-3 text-muted">{{ admin.turno }}</td>
               <td class="py-3">
                 <span class="badge rounded-pill px-3" style="background-color: #d4edda; color: #155724;">
-                  {{ admin.Rol }}
+                  {{ admin.rol }}
                 </span>
               </td>
               <td class="py-3">
@@ -399,15 +399,15 @@
             <tr *ngFor="let vendedor of vendedores">
               <td class="ps-4 py-3">
                 <span class="badge" style="background-color: #eff6ff; color: #1e293b; font-weight: 600;">
-                  {{ vendedor.ID }}
+                  {{ vendedor.id_usuario }}
                 </span>
               </td>
-              <td class="py-3 text-muted">{{ vendedor.Correo }}</td>
-              <td class="py-3 fw-medium">{{ vendedor.Nombre }}</td>
-              <td class="py-3 text-muted">{{ vendedor.Turno }}</td>
+              <td class="py-3 text-muted">{{ vendedor.correo }}</td>
+              <td class="py-3 fw-medium">{{ vendedor.nombre }}</td>
+              <td class="py-3 text-muted">{{ vendedor.turno }}</td>
               <td class="py-3">
                 <span class="badge rounded-pill px-3" style="background-color: #fff3cd; color: #856404;">
-                  {{ vendedor.Rol }}
+                  {{ vendedor.rol }}
                 </span>
               </td>
               <td class="py-3">

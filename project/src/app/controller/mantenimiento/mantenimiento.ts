@@ -129,16 +129,14 @@ export class Mantenimiento implements OnInit {
     const estadoActual = (producto.estado || '').toLowerCase();
     const nuevoEstado = estadoActual === 'activo' ? 'Inactivo' : 'Activo';
 
-    const productoModificado = { ...producto, estado: nuevoEstado };
-
-    this.productoService.modificarProducto(producto.id_producto, productoModificado).subscribe({
+    this.productoService.eliminarLogico(producto.id_producto).subscribe({
       next: (res) => {
         producto.estado = nuevoEstado;
         this.mensaje = res.message;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.mensaje = err.error?.error || 'Error al cambiar estado';
+        this.mensaje = err.error?.error || 'Error al cambiar estado del producto';
         this.cdr.detectChanges();
       },
     });

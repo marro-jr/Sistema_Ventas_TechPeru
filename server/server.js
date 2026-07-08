@@ -163,8 +163,8 @@ app.get("/registro/:rol", (req, res) => {
 
   const query = `
     select 
-    u.id_usuario as ID, u.correo as Correo,
-    u.nombre as Nombre, a.turno as Turno, a.area as Rol
+    u.id_usuario as id_usuario, u.correo as correo,
+    u.nombre as nombre, a.turno as turno, a.area as rol
     from usuario u
     join ${rol} a
     on u.id_usuario = a.id_usuario;
@@ -425,8 +425,8 @@ app.put("/productos/:id/eliminar-logico", (req, res) => {
     UPDATE producto
     SET estado =
       CASE
-        WHEN estado = 'Disponible' THEN 'Inactivo'
-        ELSE 'Disponible'
+        WHEN estado = 'Activo' THEN 'Inactivo'
+        ELSE 'Activo'
       END
     WHERE id_producto = ?;
   `;
@@ -466,84 +466,121 @@ app.delete("/productos/:id", (req, res) => {
 // RUTAS PARA REPORTES ADMINISTRATIVOS
 // ==========================================
 
-// 1. Reporte de Ventas Estadísticas (Max, Min, Avg) por Periodo
-app.get("/reportes/ventas-estadisticas", (req, res) => {
-  const { dias } = req.query; // Ejemplo: 1 (hoy), 7 (semana), 30 (mes)
+// 1. Reporte Analítico de Ventas (Max, Min, Avg, Sum, Count) por Rango de Fechas
+app.get("/reportes/ventas-analitico", (req, res) => {
+  const { fecha_inicio, fecha_fin } = req.query;
   let dateCondition = "";
-  if (dias) {
-    dateCondition = `WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL ${dias} DAY)`;
+  let queryParams = [];
+
+  if (fecha_inicio && fecha_fin) {
+    dateCondition = `WHERE DATE(fecha) >= ? AND DATE(fecha) <= ? AND estado != 'Cancelada'`;
+    queryParams = [fecha_inicio, fecha_fin];
+  } else {
+    dateCondition = `WHERE estado != 'Cancelada'`;
   }
 
-  const query = `
-    SELECT 
-      MAX(total) as venta_maxima, 
-      MIN(total) as venta_minima, 
-      AVG(total) as venta_promedio,
-      COUNT(id_venta) as total_ventas
-    FROM venta
-    ${dateCondition}
-  `;
-
-  db.query(query, (err, results) => {
-    if (err) {
-      res.status(500).json({ error: `Error al calcular estadísticas: ${err}` });
-    } else {
-      res.json(results[0]);
-    }
-  });
-});
-
-// 2. Reporte de Ingresos (Totales agrupados)
-app.get("/reportes/ingresos", (req, res) => {
-  const { dias } = req.query;
-  let dateCondition = "";
-  if (dias) {
-    dateCondition = `WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL ${dias} DAY)`;
-  }
-
-  const query = `
+  const queryResumen = `
     SELECT 
       SUM(total) as ingresos_totales,
-      COUNT(id_venta) as cantidad_ventas
+      COUNT(id_venta) as total_ventas,
+      MAX(total) as venta_maxima, 
+      MIN(total) as venta_minima, 
+      AVG(total) as venta_promedio
     FROM venta
     ${dateCondition}
   `;
 
-  db.query(query, (err, results) => {
-    if (err) {
-      res.status(500).json({ error: `Error al calcular ingresos: ${err}` });
-    } else {
-      res.json(results[0]);
-    }
+  const queryDesgloseDiario = `
+    SELECT 
+      DATE(fecha) as fecha_diaria,
+      SUM(total) as total_diario,
+      COUNT(id_venta) as cantidad_diaria
+    FROM venta
+    ${dateCondition}
+    GROUP BY DATE(fecha)
+    ORDER BY DATE(fecha) ASC
+  `;
+
+  const queryTopVentas = `
+    SELECT 
+      id_venta,
+      fecha,
+      total,
+      id_vendedor
+    FROM venta
+    ${dateCondition}
+    ORDER BY total DESC
+    LIMIT 5
+  `;
+
+  const queryBottomVentas = `
+    SELECT 
+      id_venta,
+      fecha,
+      total,
+      id_vendedor
+    FROM venta
+    ${dateCondition}
+    ORDER BY total ASC
+    LIMIT 5
+  `;
+
+  db.query(queryResumen, queryParams, (err, resultadosResumen) => {
+    if (err) return res.status(500).json({ error: `Error resumen: ${err}` });
+
+    db.query(queryDesgloseDiario, queryParams, (err2, resultadosDesglose) => {
+      if (err2) return res.status(500).json({ error: `Error desglose: ${err2}` });
+
+      db.query(queryTopVentas, queryParams, (err3, resultadosTop) => {
+        if (err3) return res.status(500).json({ error: `Error top: ${err3}` });
+
+        db.query(queryBottomVentas, queryParams, (err4, resultadosBottom) => {
+          if (err4) return res.status(500).json({ error: `Error bottom: ${err4}` });
+
+          res.json({
+            resumen: resultadosResumen[0],
+            desgloseDiario: resultadosDesglose,
+            topVentas: resultadosTop,
+            bottomVentas: resultadosBottom
+          });
+        });
+      });
+    });
   });
 });
 
-// 3. Reporte de Eliminaciones
+// 2. Reporte de Eliminados/Anulados
 app.get("/reportes/eliminaciones", (req, res) => {
-  const { dias } = req.query;
-  let dateCondition = "";
-  if (dias) {
-    dateCondition = `WHERE fecha_eliminacion >= DATE_SUB(CURDATE(), INTERVAL ${dias} DAY)`;
+  const { fecha_inicio, fecha_fin } = req.query;
+  let dateConditionVenta = "";
+  let dateConditionHistorial = "";
+  let queryParamsVenta = [];
+  let queryParamsHistorial = [];
+
+  if (fecha_inicio && fecha_fin) {
+    dateConditionVenta = `AND DATE(fecha) >= ? AND DATE(fecha) <= ?`;
+    dateConditionHistorial = `WHERE DATE(fecha_eliminacion) >= ? AND DATE(fecha_eliminacion) <= ?`;
+    queryParamsVenta = [fecha_inicio, fecha_fin];
+    queryParamsHistorial = [fecha_inicio, fecha_fin];
   }
 
-  // Verifica si la tabla historialEliminacion existe consultando directamente
-  const query = `
-    SELECT * 
+  // Traer historial físico (solo si existe)
+  const queryHistorial = `
+    SELECT id_registro_eliminado as id_registro, tabla_afectada as tabla, fecha_eliminacion as fecha, 'Eliminación Física' as accion, '' as detalle
     FROM historialEliminacion
-    ${dateCondition}
+    ${dateConditionHistorial}
     ORDER BY fecha_eliminacion DESC
   `;
 
-  db.query(query, (err, results) => {
-    if (err) {
-      // Si la tabla no existe (err.errno 1146), devolvemos un array vacío controlado
-      if (err.errno === 1146) {
+  db.query(queryHistorial, queryParamsHistorial, (errHistorial, resultadosHistorial) => {
+    if (errHistorial) {
+      if (errHistorial.errno === 1146) {
          return res.json([]);
       }
-      res.status(500).json({ error: `Error al obtener historial: ${err}` });
-    } else {
-      res.json(results);
+      return res.status(500).json({ error: errHistorial.message });
     }
+
+    res.json(resultadosHistorial);
   });
 });
 
@@ -711,21 +748,41 @@ app.put("/ventas/:id", (req, res) => {
   db.beginTransaction((err) => {
     if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-    const ventaQuery = `UPDATE venta SET fecha = ?, subtotal = ?, descuento = ?, total = ?, estado = ?, id_cliente = ?, id_vendedor = ? WHERE id_venta = ?;`;
-    db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id], (err) => {
-      if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar venta: ${err}` }));
+    // BUG-15 Fix: Obtener cantidad original para recalcular el stock
+    db.query('SELECT cantidad FROM detalleventa WHERE id_venta = ? LIMIT 1', [id], (err, results) => {
+      if (err) return db.rollback(() => res.status(500).json({ error: `Error al obtener detalle: ${err}` }));
+      
+      const cantidadOriginal = results.length > 0 ? results[0].cantidad : cantidad;
+      const diferencia = cantidadOriginal - cantidad; // Si original 5, nueva 2, diff 3 (se suman 3 al stock). Si original 2, nueva 5, diff -3 (se restan 3).
 
-      const detalleQuery = `UPDATE detalleventa SET id_producto = ?, cantidad = ?, precio_unitario = ?, descuento = ?, subtotal = ? WHERE id_venta = ?;`;
-      db.query(detalleQuery, [id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, id], (err) => {
-        if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar detalle: ${err}` }));
+      const ventaQuery = `UPDATE venta SET fecha = ?, subtotal = ?, descuento = ?, total = ?, estado = ?, id_cliente = ?, id_vendedor = ? WHERE id_venta = ?;`;
+      db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id], (err) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar venta: ${err}` }));
 
-        const pagoQuery = `UPDATE pago SET metodo_pago = ?, monto = ?, moneda = ?, estado_pago = ?, fecha_pago = ?, referencia = ? WHERE id_venta = ?;`;
-        db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id], (err) => {
-          if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar pago: ${err}` }));
-          
-          db.commit((err) => {
-            if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
-            res.json({ message: "Venta modificada exitosamente" });
+        const detalleQuery = `UPDATE detalleventa SET id_producto = ?, cantidad = ?, precio_unitario = ?, descuento = ?, subtotal = ? WHERE id_venta = ?;`;
+        db.query(detalleQuery, [id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, id], (err) => {
+          if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar detalle: ${err}` }));
+
+          const pagoQuery = `UPDATE pago SET metodo_pago = ?, monto = ?, moneda = ?, estado_pago = ?, fecha_pago = ?, referencia = ? WHERE id_venta = ?;`;
+          db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id], (err) => {
+            if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar pago: ${err}` }));
+            
+            if (diferencia !== 0) {
+              const inventarioQuery = `UPDATE inventario SET stock_actual = stock_actual + ? WHERE id_producto = ?;`;
+              db.query(inventarioQuery, [diferencia, id_producto], (err) => {
+                if (err) return db.rollback(() => res.status(500).json({ error: `Error al ajustar inventario: ${err}` }));
+                
+                db.commit((err) => {
+                  if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
+                  res.json({ message: "Venta modificada exitosamente" });
+                });
+              });
+            } else {
+              db.commit((err) => {
+                if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
+                res.json({ message: "Venta modificada exitosamente" });
+              });
+            }
           });
         });
       });

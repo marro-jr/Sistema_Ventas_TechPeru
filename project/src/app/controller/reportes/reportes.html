@@ -110,51 +110,128 @@
       </div>
 
       <!-- Tabla Reporte Estadísticas -->
-      <div class="table-responsive" *ngIf="!cargando && reporteSeleccionado === 'estadisticas' && resultadosEstadisticas">
-        <table class="table table-hover align-middle mb-0">
-          <thead style="background-color: #f8fafc;">
-            <tr>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Métrica</th>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="py-3 px-4 fw-bold">Venta Máxima</td>
-              <td class="py-3 px-4 text-end text-success">S/ {{ resultadosEstadisticas.venta_maxima || 0 }}</td>
-            </tr>
-            <tr>
-              <td class="py-3 px-4 fw-bold">Venta Mínima</td>
-              <td class="py-3 px-4 text-end text-danger">S/ {{ resultadosEstadisticas.venta_minima || 0 }}</td>
-            </tr>
-            <tr>
-              <td class="py-3 px-4 fw-bold">Venta Promedio</td>
-              <td class="py-3 px-4 text-end text-primary">S/ {{ (resultadosEstadisticas.venta_promedio || 0) | number:'1.2-2' }}</td>
-            </tr>
-            <tr>
-              <td class="py-3 px-4 fw-bold">Total Transacciones</td>
-              <td class="py-3 px-4 text-end">{{ resultadosEstadisticas.total_ventas || 0 }} ventas</td>
-            </tr>
-          </tbody>
-        </table>
+      <div *ngIf="!cargando && reporteSeleccionado === 'estadisticas' && resultadosAnalitico">
+        <div class="table-responsive mb-4">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #f8fafc;">
+              <tr>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Métrica</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="py-3 px-4 fw-bold text-dark">Venta Máxima</td>
+                <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_maxima || 0) | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 fw-bold text-dark">Venta Mínima</td>
+                <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_minima || 0) | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 fw-bold text-dark">Venta Promedio</td>
+                <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_promedio || 0) | number:'1.2-2' }}</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 fw-bold text-dark">Total Transacciones</td>
+                <td class="py-3 px-4 text-end text-dark fw-medium">{{ resultadosAnalitico.resumen?.total_ventas || 0 }} ventas</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">TOP 5 MEJORES VENTAS</h6>
+        <div class="table-responsive mb-4">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #f8fafc;">
+              <tr>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Posición</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of resultadosAnalitico.topVentas; let i = index">
+                <td class="py-3 px-4 fw-medium text-dark">{{ i + 1 }}°</td>
+                <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
+                <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
+                <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="!resultadosAnalitico.topVentas?.length">
+                <td colspan="4" class="py-4 text-center text-muted">Sin ventas en el periodo seleccionado</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">LAS 5 VENTAS MÁS BAJAS</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #f8fafc;">
+              <tr>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Posición</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of resultadosAnalitico.bottomVentas; let i = index">
+                <td class="py-3 px-4 fw-medium text-dark">{{ i + 1 }}°</td>
+                <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
+                <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
+                <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="!resultadosAnalitico.bottomVentas?.length">
+                <td colspan="4" class="py-4 text-center text-muted">Sin ventas en el periodo seleccionado</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Tabla Reporte Ingresos -->
-      <div class="table-responsive" *ngIf="!cargando && reporteSeleccionado === 'ingresos' && resultadosIngresos">
-        <table class="table table-hover align-middle mb-0">
-          <thead style="background-color: #f8fafc;">
-            <tr>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Ingresos Totales</th>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Cantidad de Ventas</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="py-4 px-4 fw-bold text-success" style="font-size: 1.5rem;">S/ {{ resultadosIngresos.ingresos_totales || 0 }}</td>
-              <td class="py-4 px-4 text-end text-dark" style="font-size: 1.2rem;">{{ resultadosIngresos.cantidad_ventas || 0 }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div *ngIf="!cargando && reporteSeleccionado === 'ingresos' && resultadosAnalitico">
+        <div class="table-responsive mb-4">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #f8fafc;">
+              <tr>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Ingresos Totales</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Cantidad de Ventas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="py-4 px-4 fw-bold text-dark" style="font-size: 1.5rem;">S/ {{ (resultadosAnalitico.resumen?.ingresos_totales || 0) | number:'1.2-2' }}</td>
+                <td class="py-4 px-4 text-end text-dark fw-medium" style="font-size: 1.2rem;">{{ resultadosAnalitico.resumen?.total_ventas || 0 }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">DESGLOSE DIARIO DE INGRESOS</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #f8fafc;">
+              <tr>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha de Operación</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">N° Operaciones</th>
+                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total Recaudado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of resultadosAnalitico.desgloseDiario">
+                <td class="py-3 px-4 text-muted">{{ d.fecha_diaria | date:'EEEE, dd MMMM yyyy' }}</td>
+                <td class="py-3 px-4 text-center fw-medium text-dark">{{ d.cantidad_diaria }}</td>
+                <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ d.total_diario | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="!resultadosAnalitico.desgloseDiario?.length">
+                <td colspan="3" class="py-4 text-center text-muted">Sin movimientos en el periodo seleccionado</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Tabla Reporte Eliminaciones -->
@@ -162,21 +239,21 @@
         <table class="table table-hover align-middle mb-0">
           <thead style="background-color: #f8fafc;">
             <tr>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Historial</th>
+              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">N°</th>
               <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Tabla Afectada</th>
               <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Eliminado</th>
               <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha Eliminación</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let e of resultadosEliminaciones">
-              <td class="py-3 px-4 text-muted">#{{ e.id_historial }}</td>
-              <td class="py-3 px-4 fw-medium">{{ e.tabla_afectada | uppercase }}</td>
-              <td class="py-3 px-4"><span class="badge bg-secondary">ID: {{ e.id_registro_eliminado }}</span></td>
-              <td class="py-3 px-4 text-muted">{{ e.fecha_eliminacion | date:'medium' }}</td>
+            <tr *ngFor="let e of resultadosEliminaciones; let i = index">
+              <td class="py-3 px-4 text-muted">{{ i + 1 }}</td>
+              <td class="py-3 px-4 fw-medium">{{ e.tabla | uppercase }}</td>
+              <td class="py-3 px-4"><span class="badge bg-secondary">ID: {{ e.id_registro }}</span></td>
+              <td class="py-3 px-4 text-muted">{{ e.fecha | date:'medium' }}</td>
             </tr>
             <tr *ngIf="resultadosEliminaciones.length === 0">
-              <td colspan="4" class="py-4 text-center text-muted">No se encontraron eliminaciones físicas en este periodo.</td>
+              <td colspan="4" class="py-4 text-center text-muted">No se encontraron eliminaciones en este periodo.</td>
             </tr>
           </tbody>
         </table>

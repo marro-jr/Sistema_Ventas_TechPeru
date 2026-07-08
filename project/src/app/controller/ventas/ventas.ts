@@ -62,8 +62,8 @@ export class Ventas implements OnInit {
 }
 
   guardar(): void {
-    if (!this.fecha || !this.id_cliente || !this.id_vendedor || !this.id_producto || !this.cantidad) {
-      this.mensaje = 'Todos los datos de la venta y el producto son obligatorios para proceder.';
+    if (!this.fecha || !this.id_cliente || !this.id_vendedor || !this.id_producto || !this.cantidad || !this.fecha_pago) {
+      this.mensaje = 'Todos los datos de la venta, producto y fecha de pago son obligatorios para proceder.';
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -188,10 +188,14 @@ export class Ventas implements OnInit {
     const descuentoDetalleFinal = this.descuento_detalle || 0;
     const descuentoVentaFinal = this.descuento || 0;
 
-    this.subtotal_detalle = cantidadFinal * precioFinal - descuentoDetalleFinal;
+    this.subtotal_detalle = Math.max(0, cantidadFinal * precioFinal - descuentoDetalleFinal);
     this.subtotal = this.subtotal_detalle;
-    this.total = this.subtotal - descuentoVentaFinal;
-    this.monto = this.total;
+    this.total = Math.max(0, this.subtotal - descuentoVentaFinal);
+    
+    // Only auto-fill monto if it's currently 0 or empty to allow manual editing
+    if (!this.monto) {
+      this.monto = this.total;
+    }
   }
 
   editar(venta: any): void {
