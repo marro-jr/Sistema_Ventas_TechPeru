@@ -1,366 +1,233 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid px-4">
-    <span class="navbar-brand fw-bold">TechPerú</span>
+<nav class="navbar navbar-expand-lg" style="background: rgba(26, 58, 92, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1);">
+  <div class="container-fluid px-4 py-1">
+    <span class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" style="font-size: 1.1rem; letter-spacing: 0.5px;">
+      <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #64b5f6, #1976d2); border-radius: 6px;"></div>
+      TechPerú
+    </span>
 
     <div class="navbar-nav">
-      <a class="nav-link" href="/inicio">Inicio</a>
-
-      <a *ngIf="rol === 'administrador'" class="nav-link" href="/registro">
-        Registro
-      </a>
-
-      <a *ngIf="rol === 'administrador'" class="nav-link" href="/mantenimiento">
-        Mantenimiento
-      </a>
-
-      <a class="nav-link" href="/clientes">Clientes</a>
-      <a class="nav-link active" href="/ventas">Ventas</a>
+      <a class="nav-link text-white-50" href="/inicio">Inicio</a>
+      <a *ngIf="rol === 'administrador'" class="nav-link text-white-50" href="/registro">Registro</a>
+      <a *ngIf="rol === 'administrador'" class="nav-link text-white-50" href="/mantenimiento">Productos</a>
+      <a class="nav-link text-white-50" href="/clientes">Clientes</a>
+      <a class="nav-link text-white fw-medium" href="/ventas" style="text-shadow: 0 0 10px rgba(255,255,255,0.3);">Ventas</a>
     </div>
   </div>
 </nav>
 
-<div class="container-fluid px-4 py-4" style="background-color: #f1f3f5; min-height: 100vh">
+<div class="container-fluid px-4 py-5 position-relative" style="background-color: #0b1121; min-height: 100vh; overflow: hidden; color: white;">
+  <!-- Background Glow Effects -->
+  <div class="position-absolute rounded-circle blur-effect" style="width: 400px; height: 400px; background: rgba(100, 181, 246, 0.15); top: -100px; left: -100px; filter: blur(100px); z-index: 0;"></div>
+  <div class="position-absolute rounded-circle blur-effect" style="width: 500px; height: 500px; background: rgba(26, 58, 92, 0.4); bottom: -150px; right: -150px; filter: blur(120px); z-index: 0;"></div>
 
-  <h1 class="fw-bold mb-4" style="font-size: 1.4rem; color: #1a3a5c">
-    Gestión de Ventas
-  </h1>
-
-  <div *ngIf="mensaje" class="alert alert-info d-flex justify-content-between align-items-center">
-    <span>{{ mensaje }}</span>
-    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
-  </div>
-
-  <!-- FORMULARIO VENTA -->
-  <div class="card border-0 mb-4 shadow-sm">
-    <div class="card-header text-white" style="background: #1a3a5c">
-      {{ idVentaEditando ? 'Modificar Venta' : 'Registrar Venta' }}
+  <div class="position-relative" style="z-index: 1;">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div style="width: 4px; height: 36px; background: linear-gradient(to bottom, #64b5f6, #1a3a5c); border-radius: 4px;"></div>
+      <h1 class="fw-bold mb-0 text-white" style="font-size: 1.6rem; letter-spacing: -0.5px;">Terminal de Ventas</h1>
     </div>
 
-    <div class="card-body">
-
-      <h6 class="fw-bold mb-3" style="color: #1a3a5c">Datos de la venta</h6>
-
-      <div class="row g-3 mb-4">
-
-        <div class="col-md-3">
-          <label class="form-label">Fecha</label>
-          <input type="date" class="form-control" [(ngModel)]="fecha" name="fecha" [disabled]="idVentaEditando !== null" />
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Cliente</label>
-          <select class="form-select" [(ngModel)]="id_cliente" name="id_cliente" [disabled]="idVentaEditando !== null">
-            <option [ngValue]="null">Seleccione cliente</option>
-            <option *ngFor="let cliente of clientes" [ngValue]="cliente.id_cliente">
-              {{ cliente.nombre }}
-            </option>
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Vendedor</label>
-          <select class="form-select" [(ngModel)]="id_vendedor" name="id_vendedor" [disabled]="idVentaEditando !== null">
-            <option [ngValue]="null">Seleccione vendedor</option>
-            <option *ngFor="let vendedor of vendedores" [ngValue]="vendedor.id_vendedor">
-              {{ vendedor.nombre }}
-            </option>
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Estado</label>
-          <select class="form-select" [(ngModel)]="estado" name="estado">
-            <option value="Pagada">Pagada</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Cancelada">Cancelada</option>
-          </select>
-        </div>
-
-      </div>
-
-      <h6 class="fw-bold mb-3" style="color: #1a3a5c">Detalle de venta</h6>
-
-      <div class="row g-3 mb-4">
-
-        <div class="col-md-4">
-          <label class="form-label">Producto</label>
-          <select
-            class="form-select"
-            [(ngModel)]="id_producto"
-            name="id_producto"
-            (change)="seleccionarProducto()" [disabled]="idVentaEditando !== null">
-          
-            <option [ngValue]="null">Seleccione producto</option>
-            <option *ngFor="let producto of productosInventario" [ngValue]="producto.id_producto">
-              {{ producto.nombre }} - Stock: {{ producto.stock_actual }}
-            </option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Cantidad</label>
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="cantidad"
-            name="cantidad"
-            (input)="calcularTotales()" [disabled]="idVentaEditando !== null" />
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Precio Unitario</label>
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="precio_unitario"
-            name="precio_unitario"
-            (input)="calcularTotales()"
-          />
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Descuento Detalle</label>
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="descuento_detalle"
-            name="descuento_detalle"
-            (input)="calcularTotales()"
-          />
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Subtotal Detalle</label>
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="subtotal_detalle"
-            name="subtotal_detalle"
-            readonly
-          />
-        </div>
-
-      </div>
-
-      <h6 class="fw-bold mb-3" style="color: #1a3a5c">Pago</h6>
-
-      <div class="row g-3 mb-4">
-
-        <div class="col-md-3">
-          <label class="form-label">Método de pago</label>
-          <select class="form-select" [(ngModel)]="metodo_pago" name="metodo_pago">
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Yape">Yape</option>
-            <option value="Plin">Plin</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Moneda</label>
-          <select class="form-select" [(ngModel)]="moneda" name="moneda">
-            <option value="PEN">PEN</option>
-            <option value="USD">USD</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Estado Pago</label>
-          <select class="form-select" [(ngModel)]="estado_pago" name="estado_pago">
-            <option value="Pagado">Pagado</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Rechazado">Rechazado</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Fecha Pago</label>
-          <input type="date" class="form-control" [(ngModel)]="fecha_pago" name="fecha_pago" />
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Referencia</label>
-          <input
-            type="text"
-            class="form-control"
-            [(ngModel)]="referencia"
-            name="referencia"
-            placeholder="N° operación"
-          />
-        </div>
-
-      </div>
-
-      <h6 class="fw-bold mb-3" style="color: #1a3a5c">Totales</h6>
-
-      <div class="row g-3 mb-4">
-
-        <div class="col-md-3">
-          <label class="form-label">Subtotal Venta</label>
-          <input type="number" class="form-control" [(ngModel)]="subtotal" name="subtotal" readonly />
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Descuento Venta</label>
-          <input
-            type="number"
-            class="form-control"
-            [(ngModel)]="descuento"
-            name="descuento"
-            (input)="calcularTotales()"
-          />
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Total</label>
-          <input type="number" class="form-control" [(ngModel)]="total" name="total" readonly />
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Monto Pagado</label>
-          <input type="number" class="form-control" [(ngModel)]="monto" name="monto" readonly />
-        </div>
-
-      </div>
-
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary" type="button" (click)="guardar()">
-          {{ idVentaEditando ? 'Guardar Cambios' : 'Registrar Venta' }}
-        </button>
-
-        <button class="btn btn-secondary" type="button" (click)="limpiarFormulario()">
-          Limpiar
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- TABLA VENTAS SIMPLE -->
-  <div class="card border-0 mb-4 shadow-sm">
-    <div class="card-header text-white" style="background: #1a3a5c">
-      Consulta usando una tabla: Venta
+    <!-- Alert -->
+    <div *ngIf="mensaje" class="alert mb-4 d-flex justify-content-between align-items-center" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 12px; backdrop-filter: blur(10px);">
+      <span>{{ mensaje }}</span>
+      <button type="button" class="btn-close btn-close-white" (click)="mensaje = ''"></button>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-striped mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th>ID</th>
-            <th>Fecha</th>
-            <th>Subtotal</th>
-            <th>Descuento</th>
-            <th>Total</th>
-            <th>Estado</th>
-            <th>ID Cliente</th>
-            <th>ID Vendedor</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let venta of ventas">
-            <td>{{ venta.id_venta }}</td>
-            <td>{{ venta.fecha | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ venta.subtotal }}</td>
-            <td>{{ venta.descuento }}</td>
-            <td>{{ venta.total }}</td>
-            <td>
-              <span
-                class="badge"
-                [class.bg-success]="venta.estado === 'Pagada'"
-                [class.bg-warning]="venta.estado === 'Pendiente'"
-                [class.bg-secondary]="venta.estado === 'Cancelada'"
-              >
-                {{ venta.estado }}
-              </span>
-            </td>
-            <td>{{ venta.id_cliente }}</td>
-            <td>{{ venta.id_vendedor }}</td>
-          </tr>
-
-          <tr *ngIf="ventas.length === 0">
-            <td colspan="8" class="text-center text-muted py-4">
-              Sin ventas registradas
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- TABLA VENTAS DETALLE -->
-  <div class="card border-0 shadow-sm">
-    <div class="card-header text-white" style="background: #1a3a5c">
-      Consulta usando varias tablas: Venta + Cliente + Vendedor + Producto + Pago
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th>ID Venta</th>
-            <th>Fecha</th>
-            <th>Cliente</th>
-            <th>Vendedor</th>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-            <th>Total</th>
-            <th>Pago</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let venta of ventasDetalle">
-            <td>{{ venta.id_venta }}</td>
-            <td>{{ venta.fecha | date: 'yyyy-MM-dd' }}</td>
-            <td>{{ venta.cliente }}</td>
-            <td>{{ venta.vendedor }}</td>
-            <td>{{ venta.producto }}</td>
-            <td>{{ venta.cantidad }}</td>
-            <td>{{ venta.precio_unitario }}</td>
-            <td>{{ venta.total }}</td>
-            <td>
-              {{ venta.metodo_pago }} - {{ venta.moneda }}
-            </td>
-            <td>
-              <span
-                class="badge"
-                [class.bg-success]="venta.estado === 'Pagada'"
-                [class.bg-warning]="venta.estado === 'Pendiente'"
-                [class.bg-secondary]="venta.estado === 'Cancelada'"
-              >
-                {{ venta.estado }}
-              </span>
-            </td>
-
-            <td>
-              <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-warning" type="button" (click)="editar(venta)">
-                  Editar
-                </button>
-
-                <button
-                  class="btn btn-sm btn-danger"
-                  type="button"
-                  (click)="eliminarFisico(venta.id_venta)"
-                >
-                  Eliminar
-                </button>
+    <div class="row g-4">
+      <!-- Formulario Venta -->
+      <div class="col-lg-12">
+        <div class="card text-white h-100" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
+          <div class="card-header py-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.1); border-radius: 16px 16px 0 0;">
+            <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              {{ idVentaEditando ? 'Modificar Venta Transaccional' : 'Nueva Venta Transaccional' }}
+            </h6>
+          </div>
+          <div class="card-body p-4">
+            
+            <h6 class="fw-bold mb-3" style="color: #64b5f6">1. Datos Generales</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Fecha</label>
+                <input type="date" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="fecha" name="fecha" [disabled]="idVentaEditando !== null" />
               </div>
-            </td>
-          </tr>
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Cliente</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="id_cliente" name="id_cliente" [disabled]="idVentaEditando !== null">
+                  <option class="text-dark" [ngValue]="null">Seleccione cliente</option>
+                  <option class="text-dark" *ngFor="let cliente of clientes" [ngValue]="cliente.id_cliente">{{ cliente.nombre }}</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Vendedor</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="id_vendedor" name="id_vendedor" [disabled]="idVentaEditando !== null">
+                  <option class="text-dark" [ngValue]="null">Seleccione vendedor</option>
+                  <option class="text-dark" *ngFor="let vendedor of vendedores" [ngValue]="vendedor.id_vendedor">{{ vendedor.nombre }}</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Estado Venta</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="estado" name="estado">
+                  <option class="text-dark" value="Pagada">Pagada</option>
+                  <option class="text-dark" value="Pendiente">Pendiente</option>
+                  <option class="text-dark" value="Cancelada">Cancelada</option>
+                </select>
+              </div>
+            </div>
 
-          <tr *ngIf="ventasDetalle.length === 0">
-            <td colspan="11" class="text-center text-muted py-4">
-              Sin ventas con detalle registradas
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            <h6 class="fw-bold mb-3" style="color: #64b5f6">2. Producto e Inventario</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Producto a descontar</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="id_producto" name="id_producto" (change)="seleccionarProducto()" [disabled]="idVentaEditando !== null">
+                  <option class="text-dark" [ngValue]="null">Seleccione producto</option>
+                  <option class="text-dark" *ngFor="let producto of productosInventario" [ngValue]="producto.id_producto">{{ producto.nombre }} - Stock: {{ producto.stock_actual }}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Cantidad</label>
+                <input type="number" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="cantidad" name="cantidad" (input)="calcularTotales()" [disabled]="idVentaEditando !== null" />
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Precio Unit.</label>
+                <input type="number" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="precio_unitario" name="precio_unitario" (input)="calcularTotales()" />
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Dcto. Prod.</label>
+                <input type="number" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="descuento_detalle" name="descuento_detalle" (input)="calcularTotales()" />
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Subtotal Prod.</label>
+                <input type="number" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="subtotal_detalle" name="subtotal_detalle" readonly />
+              </div>
+            </div>
+
+            <h6 class="fw-bold mb-3" style="color: #64b5f6">3. Información de Pago</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Método de pago</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="metodo_pago" name="metodo_pago">
+                  <option class="text-dark" value="Efectivo">Efectivo</option>
+                  <option class="text-dark" value="Tarjeta">Tarjeta</option>
+                  <option class="text-dark" value="Yape">Yape</option>
+                  <option class="text-dark" value="Plin">Plin</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Moneda</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="moneda" name="moneda">
+                  <option class="text-dark" value="PEN">PEN</option>
+                  <option class="text-dark" value="USD">USD</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Estado Pago</label>
+                <select class="form-select bg-transparent text-white border-secondary" [(ngModel)]="estado_pago" name="estado_pago">
+                  <option class="text-dark" value="Pagado">Pagado</option>
+                  <option class="text-dark" value="Pendiente">Pendiente</option>
+                  <option class="text-dark" value="Rechazado">Rechazado</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Fecha Pago</label>
+                <input type="date" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="fecha_pago" name="fecha_pago" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Referencia / Operación</label>
+                <input type="text" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="referencia" name="referencia" placeholder="N° de comprobante" />
+              </div>
+            </div>
+
+            <div class="p-3 mb-4 rounded" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label small text-muted mb-1">Subtotal Neto</label>
+                  <div class="fs-5 fw-bold">{{ subtotal | currency:'S/ ' }}</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small text-muted mb-1">Dcto. Global</label>
+                  <input type="number" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="descuento" name="descuento" (input)="calcularTotales()" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small text-muted mb-1">Total a Pagar</label>
+                  <div class="fs-4 fw-bold text-success">{{ total | currency:'S/ ' }}</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small text-muted mb-1">Monto Entregado</label>
+                  <div class="fs-5 fw-bold">{{ monto | currency:'S/ ' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button class="btn px-4 fw-medium" style="background: linear-gradient(135deg, #1a3a5c, #1976d2); border: none; color: white; border-radius: 8px;" (click)="guardar()">
+                {{ idVentaEditando ? 'Guardar Cambios' : 'Procesar Transacción SQL' }}
+              </button>
+              <button class="btn btn-outline-secondary px-4 border-secondary text-white fw-medium" style="border-radius: 8px;" type="button" (click)="limpiarFormulario()">
+                Limpiar Terminal
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tablas Historial -->
+      <div class="col-lg-12 mt-5">
+        <div class="card text-white h-100" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
+          <div class="card-header py-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.1); border-radius: 16px 16px 0 0;">
+            <h6 class="mb-0 fw-bold">Historial Completo de Ventas</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover table-dark table-borderless mb-0" style="background: transparent;">
+                <thead style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                  <tr>
+                    <th class="text-muted small fw-normal py-3 px-4">Recibo / Fecha</th>
+                    <th class="text-muted small fw-normal py-3">Involucrados</th>
+                    <th class="text-muted small fw-normal py-3">Producto</th>
+                    <th class="text-muted small fw-normal py-3">Transacción</th>
+                    <th class="text-muted small fw-normal py-3">Estado</th>
+                    <th class="text-muted small fw-normal py-3 text-end px-4">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let venta of ventasDetalle" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td class="py-3 px-4 align-middle">
+                      <div class="fw-bold">#{{ venta.id_venta }}</div>
+                      <div class="small text-muted">{{ venta.fecha | date: 'dd/MM/yyyy' }}</div>
+                    </td>
+                    <td class="py-3 align-middle">
+                      <div class="fw-medium text-info"><i class="bi bi-person-fill"></i> C: {{ venta.cliente }}</div>
+                      <div class="small text-muted">V: {{ venta.vendedor }}</div>
+                    </td>
+                    <td class="py-3 align-middle">
+                      <div class="fw-medium">{{ venta.producto }}</div>
+                      <div class="small text-muted">{{ venta.cantidad }} uni. x {{ venta.precio_unitario | currency:'S/' }}</div>
+                    </td>
+                    <td class="py-3 align-middle">
+                      <div class="fw-bold text-success">{{ venta.total | currency:'S/ ' }}</div>
+                      <div class="small text-muted">{{ venta.metodo_pago }} ({{ venta.moneda }})</div>
+                    </td>
+                    <td class="py-3 align-middle">
+                      <span class="badge" [class.bg-success]="venta.estado === 'Pagada'" [class.bg-warning]="venta.estado === 'Pendiente'" [class.bg-secondary]="venta.estado === 'Cancelada'" style="background-opacity: 0.2; border: 1px solid rgba(255,255,255,0.2);">
+                        {{ venta.estado }}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 align-middle text-end">
+                      <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn btn-sm" style="background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3);" (click)="editar(venta)">Revisar</button>
+                        <button class="btn btn-sm" style="background: rgba(244, 67, 54, 0.1); color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.3);" (click)="eliminarFisico(venta.id_venta)">Anular Físicamente</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="ventasDetalle.length === 0">
+                    <td colspan="6" class="text-center text-muted py-5">No hay ventas registradas en el sistema.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
 </div>

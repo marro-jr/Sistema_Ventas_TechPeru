@@ -103,17 +103,19 @@ export class Clientes implements OnInit {
   }
 
   eliminarFisico(id: number): void {
-    this.clientesService.eliminarFisico(id).subscribe({
-      next: (res) => {
-        this.mensaje = res.message;
-        this.cargarClientes();
-        this.cargarClientesVentas();
-      },
-      error: (err) => {
-        this.mensaje = err.error?.error || 'Error al eliminar cliente';
-        this.cdr.detectChanges();
-      },
-    });
+    if (confirm('¿Estás seguro de que deseas eliminar FÍSICAMENTE este cliente? Esta acción no se puede deshacer y fallará si el cliente ya está asociado a una venta.')) {
+      this.clientesService.eliminarFisico(id).subscribe({
+        next: (res) => {
+          this.mensaje = res.message;
+          this.cargarClientes();
+          this.cargarClientesVentas();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al eliminar cliente';
+          this.cdr.detectChanges();
+        },
+      });
+    }
   }
 
   limpiarFormulario(): void {

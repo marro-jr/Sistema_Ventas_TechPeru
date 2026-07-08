@@ -131,17 +131,19 @@ export class Mantenimiento implements OnInit {
   }
 
   eliminarFisico(id: number): void {
-    this.productoService.eliminarFisico(id).subscribe({
-      next: (res) => {
-        this.mensaje = res.message;
-        this.cargarProductos();
-        this.cargarProductosInventario();
-      },
-      error: (err) => {
-        this.mensaje = err.error?.error || 'Error al eliminar físicamente';
-        this.cdr.detectChanges();
-      },
-    });
+    if (confirm('¿Estás seguro de que deseas eliminar FÍSICAMENTE este producto? Esta acción no se puede deshacer y fallará si el producto ya está asociado a una venta.')) {
+      this.productoService.eliminarFisico(id).subscribe({
+        next: (res) => {
+          this.mensaje = res.message;
+          this.cargarProductos();
+          this.cargarProductosInventario();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al eliminar físicamente';
+          this.cdr.detectChanges();
+        },
+      });
+    }
   }
 
   limpiarFormulario(): void {

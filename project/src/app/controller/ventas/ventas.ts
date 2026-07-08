@@ -218,17 +218,19 @@ export class Ventas implements OnInit {
 
 
   eliminarFisico(id: number): void {
-    this.ventasService.eliminarFisico(id).subscribe({
-      next: (res) => {
-        this.mensaje = res.message;
-        this.cargarVentas();
-        this.cargarVentasDetalle();
-      },
-      error: (err) => {
-        this.mensaje = err.error?.error || 'Error al eliminar físicamente';
-        this.cdr.detectChanges();
-      },
-    });
+    if (confirm('¿Estás seguro de que deseas eliminar FÍSICAMENTE esta venta? Esto revertirá el stock de los productos involucrados y la acción será auditada en el historial de seguridad.')) {
+      this.ventasService.eliminarFisico(id).subscribe({
+        next: (res) => {
+          this.mensaje = res.message;
+          this.cargarVentas();
+          this.cargarVentasDetalle();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al eliminar físicamente';
+          this.cdr.detectChanges();
+        },
+      });
+    }
   }
 
   limpiarFormulario(): void {

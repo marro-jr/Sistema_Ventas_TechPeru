@@ -439,32 +439,24 @@ app.put("/productos/:id/eliminar-logico", (req, res) => {
 });
 
 // Ruta para eliminar un producto físicamente (eliminar de la base de datos)
-
 app.delete("/productos/:id", (req, res) => {
   const { id } = req.params;
 
-  const deleteInventario = `
-        DELETE FROM inventario
-        WHERE id_producto = ?;
-    `;
-
-  db.query(deleteInventario, [id], (err) => {
-    if (err) {
-      res.status(500).json({ error: `Error al eliminar inventario: ${err}` });
-      return;
+  const handleFKError = (err, res, contexto) => {
+    if (err.errno === 1451) {
+      return res.status(409).json({ error: `No se puede eliminar físicamente este ${contexto} porque tiene dependencias en el sistema (ej. Ventas). Usa la eliminación lógica.` });
     }
+    return res.status(500).json({ error: `Error al eliminar ${contexto}: ${err}` });
+  };
 
-    const deleteProducto = `
-            DELETE FROM producto
-            WHERE id_producto = ?;
-        `;
+  const deleteInventario = `DELETE FROM inventario WHERE id_producto = ?;`;
+  db.query(deleteInventario, [id], (err) => {
+    if (err) return handleFKError(err, res, "inventario");
 
+    const deleteProducto = `DELETE FROM producto WHERE id_producto = ?;`;
     db.query(deleteProducto, [id], (err) => {
-      if (err) {
-        res.status(500).json({ error: `Error al eliminar producto: ${err}` });
-      } else {
-        res.json({ message: "Producto eliminado físicamente" });
-      }
+      if (err) return handleFKError(err, res, "producto");
+      res.json({ message: "Producto eliminado físicamente" });
     });
   });
 });
@@ -580,245 +572,77 @@ app.get("/ventas-detalle", (req, res) => {
 
 // Registrar venta con detalle y pago
 app.post("/ventas", (req, res) => {
-  const {
-    fecha,
-    subtotal,
-    descuento,
-    total,
-    estado,
-    id_cliente,
-    id_vendedor,
-    id_producto,
-    cantidad,
-    precio_unitario,
-    descuento_detalle,
-    subtotal_detalle,
-    metodo_pago,
-    monto,
-    moneda,
-    estado_pago,
-    fecha_pago,
-    referencia,
-  } = req.body;
+  const { fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia } = req.body;
 
-  const stockQuery = `
-    SELECT stock_actual
-    FROM inventario
-    WHERE id_producto = ?;
-  `;
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-  db.query(stockQuery, [id_producto], (err, stockResult) => {
-    if (err) {
-      return res.status(500).json({
-        error: `Error al verificar stock: ${err}`,
-      });
-    }
+    const stockQuery = `SELECT stock_actual FROM inventario WHERE id_producto = ? FOR UPDATE;`;
+    db.query(stockQuery, [id_producto], (err, stockResult) => {
+      if (err) return db.rollback(() => res.status(500).json({ error: `Error al verificar stock: ${err}` }));
+      if (stockResult.length === 0) return db.rollback(() => res.status(404).json({ error: "Producto no encontrado en inventario" }));
+      
+      const stockActual = stockResult[0].stock_actual;
+      if (cantidad > stockActual) return db.rollback(() => res.status(400).json({ error: `Stock insuficiente. Disponible: ${stockActual}` }));
 
-    if (stockResult.length === 0) {
-      return res.status(404).json({
-        error: "Producto no encontrado en inventario",
-      });
-    }
-
-    const stockActual = stockResult[0].stock_actual;
-
-    if (cantidad > stockActual) {
-      return res.status(400).json({
-        error: `Stock insuficiente. Disponible: ${stockActual}`,
-      });
-    }
-
-    const ventaQuery = `
-      INSERT INTO venta
-      (fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor)
-      VALUES (?, ?, ?, ?, ?, ?, ?);
-    `;
-
-    db.query(
-      ventaQuery,
-      [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor],
-      (err, ventaResult) => {
-        if (err) {
-          return res.status(500).json({
-            error: `Error al registrar venta: ${err}`,
-          });
-        }
-
+      const ventaQuery = `INSERT INTO venta (fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor) VALUES (?, ?, ?, ?, ?, ?, ?);`;
+      db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor], (err, ventaResult) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al registrar venta: ${err}` }));
+        
         const idVenta = ventaResult.insertId;
-
-        const detalleQuery = `
-          INSERT INTO detalleventa
-          (id_venta, id_producto, cantidad, precio_unitario, descuento, subtotal)
-          VALUES (?, ?, ?, ?, ?, ?);
-        `;
-
-        db.query(
-          detalleQuery,
-          [
-            idVenta,
-            id_producto,
-            cantidad,
-            precio_unitario,
-            descuento_detalle,
-            subtotal_detalle,
-          ],
-          (err) => {
-            if (err) {
-              return res.status(500).json({
-                error: `Error al registrar detalle de venta: ${err}`,
+        const detalleQuery = `INSERT INTO detalleventa (id_venta, id_producto, cantidad, precio_unitario, descuento, subtotal) VALUES (?, ?, ?, ?, ?, ?);`;
+        
+        db.query(detalleQuery, [idVenta, id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle], (err) => {
+          if (err) return db.rollback(() => res.status(500).json({ error: `Error al registrar detalle: ${err}` }));
+          
+          const pagoQuery = `INSERT INTO pago (metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id_venta) VALUES (?, ?, ?, ?, ?, ?, ?);`;
+          db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, idVenta], (err) => {
+            if (err) return db.rollback(() => res.status(500).json({ error: `Error al registrar pago: ${err}` }));
+            
+            const actualizarStock = `UPDATE inventario SET stock_actual = stock_actual - ? WHERE id_producto = ?;`;
+            db.query(actualizarStock, [cantidad, id_producto], (err) => {
+              if (err) return db.rollback(() => res.status(500).json({ error: `Error al actualizar stock: ${err}` }));
+              
+              db.commit((err) => {
+                if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
+                res.json({ message: "Venta registrada exitosamente", id_venta: idVenta });
               });
-            }
-
-            const pagoQuery = `
-              INSERT INTO pago
-              (metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id_venta)
-              VALUES (?, ?, ?, ?, ?, ?, ?);
-            `;
-
-            db.query(
-              pagoQuery,
-              [
-                metodo_pago,
-                monto,
-                moneda,
-                estado_pago,
-                fecha_pago,
-                referencia,
-                idVenta,
-              ],
-              (err) => {
-                if (err) {
-                  return res.status(500).json({
-                    error: `Error al registrar pago: ${err}`,
-                  });
-                }
-
-                const actualizarStock = `
-                  UPDATE inventario
-                  SET stock_actual = stock_actual - ?
-                  WHERE id_producto = ?;
-                `;
-
-                db.query(
-                  actualizarStock,
-                  [cantidad, id_producto],
-                  (err) => {
-                    if (err) {
-                      return res.status(500).json({
-                        error: `Venta registrada pero error al actualizar stock: ${err}`,
-                      });
-                    }
-
-                    res.json({
-                      message: "Venta registrada exitosamente",
-                      id_venta: idVenta,
-                    });
-                  }
-                );
-              }
-            );
-          }
-        );
-      }
-    );
+            });
+          });
+        });
+      });
+    });
   });
 });
 
 // Modificar venta con detalle y pago
 app.put("/ventas/:id", (req, res) => {
   const { id } = req.params;
+  const { fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia } = req.body;
 
-  const {
-    fecha,
-    subtotal,
-    descuento,
-    total,
-    estado,
-    id_cliente,
-    id_vendedor,
-    id_producto,
-    cantidad,
-    precio_unitario,
-    descuento_detalle,
-    subtotal_detalle,
-    metodo_pago,
-    monto,
-    moneda,
-    estado_pago,
-    fecha_pago,
-    referencia,
-  } = req.body;
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-  const ventaQuery = `
-        UPDATE venta
-        SET fecha = ?, subtotal = ?, descuento = ?, total = ?, estado = ?, id_cliente = ?, id_vendedor = ?
-        WHERE id_venta = ?;
-    `;
+    const ventaQuery = `UPDATE venta SET fecha = ?, subtotal = ?, descuento = ?, total = ?, estado = ?, id_cliente = ?, id_vendedor = ? WHERE id_venta = ?;`;
+    db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id], (err) => {
+      if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar venta: ${err}` }));
 
-  db.query(
-    ventaQuery,
-    [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id],
-    (err) => {
-      if (err) {
-        res.status(500).json({ error: `Error al modificar venta: ${err}` });
-        return;
-      }
+      const detalleQuery = `UPDATE detalleventa SET id_producto = ?, cantidad = ?, precio_unitario = ?, descuento = ?, subtotal = ? WHERE id_venta = ?;`;
+      db.query(detalleQuery, [id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, id], (err) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar detalle: ${err}` }));
 
-      const detalleQuery = `
-                UPDATE detalleventa
-                SET id_producto = ?, cantidad = ?, precio_unitario = ?, descuento = ?, subtotal = ?
-                WHERE id_venta = ?;
-            `;
-
-      db.query(
-        detalleQuery,
-        [
-          id_producto,
-          cantidad,
-          precio_unitario,
-          descuento_detalle,
-          subtotal_detalle,
-          id,
-        ],
-        (err) => {
-          if (err) {
-            res
-              .status(500)
-              .json({ error: `Error al modificar detalle: ${err}` });
-            return;
-          }
-
-          const pagoQuery = `
-                        UPDATE pago
-                        SET metodo_pago = ?, monto = ?, moneda = ?, estado_pago = ?, fecha_pago = ?, referencia = ?
-                        WHERE id_venta = ?;
-                    `;
-
-          db.query(
-            pagoQuery,
-            [
-              metodo_pago,
-              monto,
-              moneda,
-              estado_pago,
-              fecha_pago,
-              referencia,
-              id,
-            ],
-            (err) => {
-              if (err) {
-                res
-                  .status(500)
-                  .json({ error: `Error al modificar pago: ${err}` });
-              } else {
-                res.json({ message: "Venta modificada exitosamente" });
-              }
-            },
-          );
-        },
-      );
-    },
-  );
+        const pagoQuery = `UPDATE pago SET metodo_pago = ?, monto = ?, moneda = ?, estado_pago = ?, fecha_pago = ?, referencia = ? WHERE id_venta = ?;`;
+        db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id], (err) => {
+          if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar pago: ${err}` }));
+          
+          db.commit((err) => {
+            if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
+            res.json({ message: "Venta modificada exitosamente" });
+          });
+        });
+      });
+    });
+  });
 });
 
 // Eliminación lógica de venta
@@ -842,45 +666,60 @@ app.put("/ventas/:id/eliminar-logico", (req, res) => {
   });
 });
 
-// Eliminación física de venta
+// Eliminación física de venta (Con historial y transacción)
 app.delete("/ventas/:id", (req, res) => {
   const { id } = req.params;
 
-  const deletePago = `
-        DELETE FROM pago
-        WHERE id_venta = ?;
-    `;
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-  db.query(deletePago, [id], (err) => {
-    if (err) {
-      res.status(500).json({ error: `Error al eliminar pago: ${err}` });
-      return;
-    }
+    const getDetalleQuery = `SELECT id_producto, cantidad FROM detalleventa WHERE id_venta = ?;`;
+    db.query(getDetalleQuery, [id], (err, detalleResult) => {
+      if (err) return db.rollback(() => res.status(500).json({ error: `Error al consultar detalle: ${err}` }));
+      
+      const id_producto = detalleResult[0]?.id_producto;
+      const cantidad = detalleResult[0]?.cantidad || 0;
 
-    const deleteDetalle = `
-            DELETE FROM detalleventa
-            WHERE id_venta = ?;
-        `;
+      const deletePago = `DELETE FROM pago WHERE id_venta = ?;`;
+      db.query(deletePago, [id], (err) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al eliminar pago: ${err}` }));
 
-    db.query(deleteDetalle, [id], (err) => {
-      if (err) {
-        res
-          .status(500)
-          .json({ error: `Error al eliminar detalle de venta: ${err}` });
-        return;
-      }
+        const deleteDetalle = `DELETE FROM detalleventa WHERE id_venta = ?;`;
+        db.query(deleteDetalle, [id], (err) => {
+          if (err) return db.rollback(() => res.status(500).json({ error: `Error al eliminar detalle de venta: ${err}` }));
 
-      const deleteVenta = `
-                DELETE FROM venta
-                WHERE id_venta = ?;
-            `;
+          const deleteVenta = `DELETE FROM venta WHERE id_venta = ?;`;
+          db.query(deleteVenta, [id], (err) => {
+            if (err) return db.rollback(() => res.status(500).json({ error: `Error al eliminar venta: ${err}` }));
 
-      db.query(deleteVenta, [id], (err) => {
-        if (err) {
-          res.status(500).json({ error: `Error al eliminar venta: ${err}` });
-        } else {
-          res.json({ message: "Venta eliminada físicamente" });
-        }
+            if (id_producto) {
+              const actualizarStock = `UPDATE inventario SET stock_actual = stock_actual + ? WHERE id_producto = ?;`;
+              db.query(actualizarStock, [cantidad, id_producto], (err) => {
+                if (err) return db.rollback(() => res.status(500).json({ error: `Error al revertir inventario: ${err}` }));
+                
+                const insertHistorial = `INSERT INTO HistorialEliminacion (tabla_afectada, id_registro_eliminado, motivo) VALUES ('Venta', ?, 'Eliminado permanentemente');`;
+                db.query(insertHistorial, [id], (err) => {
+                  if (err) return db.rollback(() => res.status(500).json({ error: `Error al guardar en historial: ${err}` }));
+                  
+                  db.commit((err) => {
+                    if (err) return db.rollback(() => res.status(500).json({ error: "Error al hacer commit." }));
+                    res.json({ message: "Venta eliminada físicamente (Stock restaurado)." });
+                  });
+                });
+              });
+            } else {
+               const insertHistorial = `INSERT INTO HistorialEliminacion (tabla_afectada, id_registro_eliminado, motivo) VALUES ('Venta', ?, 'Eliminado permanentemente sin detalle');`;
+               db.query(insertHistorial, [id], (err) => {
+                  if (err) return db.rollback(() => res.status(500).json({ error: `Error al guardar en historial: ${err}` }));
+                  
+                  db.commit((err) => {
+                    if (err) return db.rollback(() => res.status(500).json({ error: "Error al hacer commit." }));
+                    res.json({ message: "Venta eliminada físicamente." });
+                  });
+                });
+            }
+          });
+        });
       });
     });
   });
@@ -978,17 +817,18 @@ app.put("/clientes/:id", (req, res) => {
 app.delete("/clientes/:id", (req, res) => {
   const { id } = req.params;
 
-  const query = `
-        DELETE FROM cliente
-        WHERE id_cliente = ?;
-    `;
+  const handleFKError = (err, res, contexto) => {
+    if (err.errno === 1451) {
+      return res.status(409).json({ error: `No se puede eliminar físicamente este ${contexto} porque tiene ventas asociadas en el sistema.` });
+    }
+    return res.status(500).json({ error: `Error al eliminar ${contexto}: ${err}` });
+  };
+
+  const query = `DELETE FROM cliente WHERE id_cliente = ?;`;
 
   db.query(query, [id], (err) => {
-    if (err) {
-      res.status(500).json({ error: `Error al eliminar cliente: ${err}` });
-    } else {
-      res.json({ message: "Cliente eliminado físicamente" });
-    }
+    if (err) return handleFKError(err, res, "cliente");
+    res.json({ message: "Cliente eliminado físicamente" });
   });
 });
 
