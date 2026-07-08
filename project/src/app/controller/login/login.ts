@@ -1,3 +1,9 @@
+/**
+ * @module Login
+ * @description Componente principal para el inicio de sesión del sistema.
+ * Gestiona la autenticación, roles de usuario, manejo de estados de carga y errores.
+ * Refactorizado para incluir validación estricta y mejoras visuales (Glassmorphism).
+ */
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LoginService } from '../../services/login-service';

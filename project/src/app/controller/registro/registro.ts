@@ -1,3 +1,9 @@
+/**
+ * @module Registro
+ * @description Componente para el registro de usuarios y asignación de roles.
+ * Integrado en una sola vista para mejorar la experiencia de usuario (UX).
+ * Incluye validaciones robustas con expresiones regulares para contraseñas seguras.
+ */
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';

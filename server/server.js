@@ -1,3 +1,9 @@
+/**
+ * @file server.js
+ * @description Archivo principal del Backend (Node.js + Express).
+ * Maneja todas las rutas CRUD, seguridad contra inyecciones SQL,
+ * restricciones lógicas y físicas de eliminación y control transaccional.
+ */
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
@@ -12,7 +18,7 @@ const puerto = 3000;
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",
+  password: "12345",
   database: "db_tech_peru",
   port: 3306,
 });
