@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
   styleUrl: './inicio.css',
 })
 // Controlador para la vista principal de Inicio
+// Este componente gestiona la UI del dashboard central.
 export class Inicio implements OnInit {
 
   nombre: string = '';

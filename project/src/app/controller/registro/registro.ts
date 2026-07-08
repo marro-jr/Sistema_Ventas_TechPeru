@@ -98,6 +98,7 @@ export class Registro implements OnInit {
       .insertarUsuario(this.correo, this.nombre, this.contrasena, this.estado)
       .subscribe({
         next: (res) => {
+<<<<<<< HEAD
           this.ultimoIdRegistrado = res.id_usuario;
           
           if (this.rolSeleccionado && this.turno) {
@@ -116,6 +117,16 @@ export class Registro implements OnInit {
             this.mensaje = `Usuario registrado exitosamente. ID: ${res.id_usuario}`;
             this.finalizarRegistro();
           }
+=======
+          this.ultimoIdRegistrado = res.id_usuario; 
+          this.mensaje = `Usuario registrado exitosamente. Su ID es: ${res.id_usuario}`;
+          this.correo = '';
+          this.nombre = '';
+          this.contrasena = '';
+          this.estado = '';
+          this.cargarUsuarios();
+          this.cdr.detectChanges();
+>>>>>>> 2349a142c93eb9219924e821f28c876a17cd3731
         },
         error: (err) => {
           this.mensaje = `Error: ${err.error?.error || 'No se pudo registrar el usuario'}`;
@@ -283,8 +294,26 @@ export class Registro implements OnInit {
   }
 
   toggleEstado(usuario: any) {
+<<<<<<< HEAD
     const estadoActual = (usuario.estado || '').toLowerCase();
     const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+=======
+  const estadoActual = (usuario.estado || '').toLowerCase();
+const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
+
+  this.registroService.modificarUsuario(usuario.id_usuario, usuario.nombre, nuevoEstado
+  ).subscribe({
+    next: (res) => {
+      usuario.estado = nuevoEstado;
+      this.mensaje = res.message;
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      this.mensaje = `Error: ${err.error?.error || 'No se pudo cambiar estado'}`;
+    }
+  });
+}
+>>>>>>> 2349a142c93eb9219924e821f28c876a17cd3731
 
     this.registroService.modificarUsuario(
       usuario.id_usuario,

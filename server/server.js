@@ -9,7 +9,8 @@ const cors = require("cors");
 const mysql = require("mysql2");
 const bodyParser = require("body-parser");
 const app = express();
-
+// Configuración del servidor y middlewares
+// Se incluye protección de rutas y parseo JSON
 app.use(cors());
 app.use(bodyParser.json());
 
