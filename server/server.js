@@ -28,8 +28,8 @@ db.connect((err) => {
 // RUTAS PARA INICIO DE SESIÓN
 
 // Ruta para iniciar sesión y obtener rol
-app.get("/login/:correo/:contrasena", (req, res) => {
-  const { correo, contrasena } = req.params;
+app.post("/login", (req, res) => {
+  const { correo, contrasena } = req.body;
 
   const query = `
     SELECT 
@@ -65,17 +65,18 @@ app.get("/login/:correo/:contrasena", (req, res) => {
           rol = "vendedor";
         }
 
-        res.json([
-          {
+        res.json({
+          success: true,
+          usuario: {
             id_usuario: usuario.id_usuario,
             correo: usuario.correo,
             nombre: usuario.nombre,
             estado: usuario.estado,
             rol: rol,
-          },
-        ]);
+          }
+        });
       } else {
-        res.json([]);
+        res.status(401).json({ success: false, error: "Correo o contraseña incorrectos, o usuario inactivo" });
       }
     }
   });

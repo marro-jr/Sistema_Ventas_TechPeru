@@ -12,6 +12,6 @@ export class LoginService {
   constructor(private http: HttpClient) {}
 
   obtenerCredenciales(correo: string, contrasena: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/${correo}/${contrasena}`);
+    return this.http.post(this.apiUrl, { correo, contrasena });
   }
 }

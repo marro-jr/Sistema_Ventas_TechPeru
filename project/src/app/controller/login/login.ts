@@ -21,10 +21,15 @@ export class Login {
   ) {}
 
   iniciarSesion() {
+    if (!this.correo || !this.contrasena) {
+      alert('Por favor, ingresa el correo y la contraseña.');
+      return;
+    }
+
     this.loginService.obtenerCredenciales(this.correo, this.contrasena).subscribe({
       next: (data) => {
-        if (data.length > 0) {
-          const usuario = data[0];
+        if (data.success && data.usuario) {
+          const usuario = data.usuario;
 
           if (!usuario.rol) {
             alert('El usuario existe, pero no tiene rol asignado');
@@ -37,15 +42,17 @@ export class Login {
           localStorage.setItem('rol', usuario.rol);
 
           this.router.navigate(['/inicio']);
-        } else {
-          alert('Correo o contraseña incorrectos, o usuario inactivo');
         }
-
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al obtener las credenciales:', err);
-        alert('Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+        console.error('Error al iniciar sesión:', err);
+        if (err.status === 401) {
+          alert('Correo o contraseña incorrectos, o usuario inactivo');
+        } else {
+          alert('Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo más tarde.');
+        }
+        this.cdr.detectChanges();
       },
     });
   }
