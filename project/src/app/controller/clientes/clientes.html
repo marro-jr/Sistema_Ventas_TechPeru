@@ -1,7 +1,9 @@
-<nav class="navbar navbar-expand-lg" style="background: rgba(26, 58, 92, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1);">
-  <div class="container-fluid px-4 py-1">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #0f172a; border-bottom: 1px solid rgba(255,255,255,0.1);">
+  <div class="container-fluid px-4 py-2">
     <span class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" style="font-size: 1.1rem; letter-spacing: 0.5px;">
-      <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #64b5f6, #1976d2); border-radius: 6px;"></div>
+      <div style="width: 24px; height: 24px; background: #ffffff; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 12px; height: 12px; background: #0f172a; border-radius: 3px;"></div>
+      </div>
       TechPerú
     </span>
 
@@ -9,36 +11,35 @@
       <a class="nav-link text-white-50" href="/inicio">Inicio</a>
       <a *ngIf="rol === 'administrador'" class="nav-link text-white-50" href="/registro">Registro</a>
       <a *ngIf="rol === 'administrador'" class="nav-link text-white-50" href="/mantenimiento">Productos</a>
-      <a class="nav-link text-white fw-medium" href="/clientes" style="text-shadow: 0 0 10px rgba(255,255,255,0.3);">Clientes</a>
+      <a class="nav-link text-white fw-medium" href="/clientes">Clientes</a>
       <a class="nav-link text-white-50" href="/ventas">Ventas</a>
     </div>
   </div>
 </nav>
 
-<div class="container-fluid px-4 py-5 position-relative" style="background-color: #0b1121; min-height: 100vh; overflow: hidden; color: white;">
-  <!-- Background Glow Effects -->
-  <div class="position-absolute rounded-circle blur-effect" style="width: 400px; height: 400px; background: rgba(100, 181, 246, 0.15); top: -100px; left: -100px; filter: blur(100px); z-index: 0;"></div>
-  <div class="position-absolute rounded-circle blur-effect" style="width: 500px; height: 500px; background: rgba(26, 58, 92, 0.4); bottom: -150px; right: -150px; filter: blur(120px); z-index: 0;"></div>
+<div class="container-fluid px-4 py-5 position-relative" style="background-color: #f1f5f9; min-height: 100vh; overflow: hidden; color: #1e293b;">
 
   <div class="position-relative" style="z-index: 1;">
     <div class="d-flex align-items-center gap-3 mb-4">
-      <div style="width: 4px; height: 36px; background: linear-gradient(to bottom, #64b5f6, #1a3a5c); border-radius: 4px;"></div>
-      <h1 class="fw-bold mb-0 text-white" style="font-size: 1.6rem; letter-spacing: -0.5px;">Directorio de Clientes</h1>
+      <div style="width: 4px; height: 36px; background: #0f172a; border-radius: 2px;"></div>
+      <h1 class="fw-bold mb-0 text-dark" style="font-size: 1.6rem; letter-spacing: -0.5px;">Directorio de Clientes</h1>
     </div>
 
     <!-- Alert -->
-    <div *ngIf="mensaje" class="alert mb-4 d-flex justify-content-between align-items-center" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 12px; backdrop-filter: blur(10px);">
+    <div *ngIf="mensaje" class="alert mb-4 d-flex justify-content-between align-items-center" 
+         [ngClass]="(mensaje.toLowerCase().includes('error') || mensaje.toLowerCase().includes('no se puede') || mensaje.toLowerCase().includes('obligatori')) ? 'alert-danger' : 'alert-success'" 
+         style="border-radius: 12px; font-weight: 500;">
       <span>{{ mensaje }}</span>
-      <button type="button" class="btn-close btn-close-white" (click)="mensaje = ''"></button>
+      <button type="button" class="btn-close" (click)="mensaje = ''"></button>
     </div>
 
     <div class="row g-4">
       <!-- Formulario Cliente -->
       <div class="col-lg-4">
-        <div class="card text-white h-100" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
-          <div class="card-header py-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.1); border-radius: 16px 16px 0 0;">
+        <div class="card text-dark h-100 border-0" style="background: #ffffff; border-radius: 8px; transition: all 0.3s;" [style.box-shadow]="idClienteEditando ? '0 0 0 3px rgba(37,99,235,0.4)' : '0 4px 6px -1px rgba(0, 0, 0, 0.05)'">
+          <div class="card-header py-3 text-white" style="background-color: #334155; border-bottom: none; border-radius: 8px 8px 0 0;">
             <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               {{ idClienteEditando ? 'Modificar Cliente' : 'Nuevo Cliente' }}
             </h6>
           </div>
@@ -46,27 +47,27 @@
             <div class="row g-3">
               <div class="col-12">
                 <label class="form-label small text-muted mb-1">Nombre Completo</label>
-                <input class="form-control bg-transparent text-white border-secondary" [(ngModel)]="nombre" name="nombre" />
+                <input class="form-control" [(ngModel)]="nombre" name="nombre" />
               </div>
               <div class="col-12">
                 <label class="form-label small text-muted mb-1">Teléfono</label>
-                <input class="form-control bg-transparent text-white border-secondary" [(ngModel)]="telefono" name="telefono" />
+                <input class="form-control" [(ngModel)]="telefono" name="telefono" />
               </div>
               <div class="col-12">
                 <label class="form-label small text-muted mb-1">Dirección</label>
-                <input class="form-control bg-transparent text-white border-secondary" [(ngModel)]="direccion" name="direccion" />
+                <input class="form-control" [(ngModel)]="direccion" name="direccion" />
               </div>
               <div class="col-12">
                 <label class="form-label small text-muted mb-1">Correo Electrónico</label>
-                <input type="email" class="form-control bg-transparent text-white border-secondary" [(ngModel)]="correo" name="correo" [disabled]="idClienteEditando !== null" />
+                <input type="email" class="form-control" [(ngModel)]="correo" name="correo" [disabled]="idClienteEditando !== null" />
               </div>
             </div>
 
             <div class="mt-4 d-flex gap-2">
-              <button class="btn w-100 fw-medium" style="background: linear-gradient(135deg, #1a3a5c, #1976d2); border: none; color: white; border-radius: 8px;" (click)="guardar()">
+              <button class="btn w-100 fw-medium text-white" style="background: #2563eb; border: none; border-radius: 6px;" (click)="guardar()">
                 {{ idClienteEditando ? 'Guardar Cambios' : 'Registrar' }}
               </button>
-              <button class="btn btn-outline-secondary w-100 border-secondary text-white fw-medium" style="border-radius: 8px;" type="button" (click)="limpiarFormulario()">
+              <button class="btn btn-outline-secondary w-100 fw-medium" style="border-radius: 6px;" type="button" (click)="limpiarFormulario()">
                 Limpiar
               </button>
             </div>
@@ -76,14 +77,17 @@
 
       <!-- Tabla Clientes + Ventas -->
       <div class="col-lg-8">
-        <div class="card text-white h-100" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
-          <div class="card-header py-3" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.1); border-radius: 16px 16px 0 0;">
-            <h6 class="mb-0 fw-bold">Cartera de Clientes e Historial</h6>
+        <div class="card text-dark h-100 border-0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+          <div class="card-header py-3 text-white" style="background-color: #334155; border-bottom: none; border-radius: 8px 8px 0 0;">
+            <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              Cartera de Clientes e Historial
+            </h6>
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table table-hover table-dark table-borderless mb-0" style="background: transparent;">
-                <thead style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <table class="table table-hover table-borderless mb-0">
+                <thead class="bg-light text-secondary" style="border-bottom: 1px solid #e2e8f0;">
                   <tr>
                     <th class="text-muted small fw-normal py-3 px-4">Cliente</th>
                     <th class="text-muted small fw-normal py-3">Contacto</th>
@@ -92,7 +96,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let cliente of clientesVentas" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                  <tr *ngFor="let cliente of clientesVentas" style="border-bottom: 1px solid #e2e8f0;">
                     <td class="py-3 px-4">
                       <div class="fw-medium">{{ cliente.nombre }}</div>
                       <div class="small text-muted">ID: {{ cliente.id_cliente }}</div>
@@ -105,7 +109,7 @@
                       <div *ngIf="cliente.id_venta">
                         <div class="fw-medium">{{ cliente.total | currency:'S/ ' }}</div>
                         <div class="small text-muted">{{ cliente.fecha | date: 'dd/MM/yyyy' }}</div>
-                        <span class="badge mt-1" [class.bg-success]="cliente.estado === 'Pagada'" [class.bg-warning]="cliente.estado === 'Pendiente'" [class.bg-secondary]="cliente.estado === 'Cancelada'" style="background-opacity: 0.2; border: 1px solid rgba(255,255,255,0.2);">
+                        <span class="badge mt-1" [class.bg-success]="cliente.estado === 'Pagada'" [class.bg-warning]="cliente.estado === 'Pendiente'" [class.bg-secondary]="cliente.estado === 'Cancelada'">
                           {{ cliente.estado }}
                         </span>
                       </div>
@@ -113,8 +117,8 @@
                     </td>
                     <td class="py-3 px-4 align-middle text-end">
                       <div class="d-flex gap-2 justify-content-end">
-                        <button class="btn btn-sm" style="background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3);" (click)="editar(cliente)">Editar</button>
-                        <button class="btn btn-sm" style="background: rgba(244, 67, 54, 0.1); color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.3);" (click)="eliminarFisico(cliente.id_cliente)">Eliminar</button>
+                        <button class="btn btn-sm text-dark" style="background: #eab308; border-color: #eab308;" (click)="editar(cliente)">Modificar</button>
+                        <button class="btn btn-sm text-white" style="background: #dc2626; border-color: #dc2626;" (click)="eliminarFisico(cliente.id_cliente)">Eliminar</button>
                       </div>
                     </td>
                   </tr>

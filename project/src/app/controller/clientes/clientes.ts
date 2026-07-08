@@ -42,6 +42,11 @@ export class Clientes implements OnInit {
 }
 
   guardar(): void {
+    if (!this.nombre || !this.telefono || !this.direccion || !this.correo) {
+      this.mensaje = 'Todos los campos del cliente son obligatorios para guardar.';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const cliente = {
       nombre: this.nombre,
       telefono: this.telefono,

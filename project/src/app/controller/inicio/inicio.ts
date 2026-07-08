@@ -44,6 +44,10 @@ export class Inicio implements OnInit {
     this.router.navigate(['/ventas']);
   }
 
+  irReportes(): void {
+    this.router.navigate(['/reportes']);
+  }
+
   cerrarSesion(): void {
     localStorage.clear();
     this.router.navigate(['/login']);

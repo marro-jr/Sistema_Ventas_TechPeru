@@ -23,7 +23,7 @@ export class Mantenimiento implements OnInit {
   tipo_switch = '';
   tipo_layout = '';
   precio: number | null = null;
-  estado = 'Disponible';
+  estado = 'Activo';
   stock_actual: number | null = null;
   stock_minimo: number | null = null;
 
@@ -46,6 +46,11 @@ export class Mantenimiento implements OnInit {
   }
 
   guardar(): void {
+    if (!this.nombre || !this.marca || !this.modelo || !this.tipo_switch || !this.tipo_layout || this.precio === null || !this.estado || this.stock_actual === null || this.stock_minimo === null) {
+      this.mensaje = 'Todos los campos del producto son obligatorios para guardar.';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const producto = {
       nombre: this.nombre,
       marca: this.marca,
@@ -120,15 +125,20 @@ export class Mantenimiento implements OnInit {
     this.stock_minimo = producto.stock_minimo;
   }
 
-  eliminarLogico(id: number): void {
-    this.productoService.eliminarLogico(id).subscribe({
+  toggleEstado(producto: any): void {
+    const estadoActual = (producto.estado || '').toLowerCase();
+    const nuevoEstado = estadoActual === 'activo' ? 'Inactivo' : 'Activo';
+
+    const productoModificado = { ...producto, estado: nuevoEstado };
+
+    this.productoService.modificarProducto(producto.id_producto, productoModificado).subscribe({
       next: (res) => {
+        producto.estado = nuevoEstado;
         this.mensaje = res.message;
-        this.cargarProductos();
-        this.cargarProductosInventario();
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        this.mensaje = err.error?.error || 'Error al eliminar lógicamente';
+        this.mensaje = err.error?.error || 'Error al cambiar estado';
         this.cdr.detectChanges();
       },
     });
@@ -158,7 +168,7 @@ export class Mantenimiento implements OnInit {
     this.tipo_switch = '';
     this.tipo_layout = '';
     this.precio = null;
-    this.estado = 'Disponible';
+    this.estado = 'Activo';
     this.stock_actual = null;
     this.stock_minimo = null;
     this.cdr.detectChanges();

@@ -1,4 +1,4 @@
-<div class="login-wrapper min-vh-100 d-flex justify-content-center align-items-center" style="background-image: url('background_empresa.png'); background-size: cover; background-position: center;">
+<div class="login-wrapper min-vh-100 d-flex justify-content-center align-items-center">
   <!-- Animated background elements -->
   <div class="bg-shape shape-1"></div>
   <div class="bg-shape shape-2"></div>
@@ -12,10 +12,10 @@
           <div class="card-body p-4 p-md-5">
             <div class="text-center mb-5">
               <div class="logo-container mx-auto mb-3">
-                <span class="logo-text fw-bold">TP</span>
+                <img src="logo_empresa.png" alt="Logo TechPerú" style="width: 48px; height: 48px; border-radius: 12px; transform: rotate(5deg);">
               </div>
-              <h4 class="fw-bold text-white mb-1">Technology Perú</h4>
-              <p class="text-white-50 small mb-0">Gestión de Ventas Pro</p>
+              <h4 class="fw-bold text-slate-800 mb-1">Technology Perú</h4>
+              <p class="text-slate-500 small mb-0">Gestión de Ventas Pro</p>
             </div>
 
             <!-- Error Message -->
@@ -29,7 +29,7 @@
             <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm">
               
               <div class="form-group mb-4 position-relative">
-                <label for="correo" class="form-label text-white-50 small fw-semibold text-uppercase tracking-wider">
+                <label for="correo" class="form-label text-slate-500 small fw-semibold text-uppercase tracking-wider">
                   Correo Electrónico
                 </label>
                 <div class="input-container">
@@ -53,12 +53,9 @@
               </div>
 
               <div class="form-group mb-5 position-relative">
-                <div class="d-flex justify-content-between align-items-end">
-                  <label for="contrasena" class="form-label text-white-50 small fw-semibold text-uppercase tracking-wider">
-                    Contraseña
-                  </label>
-                  <a href="#" class="text-accent small text-decoration-none fw-medium mb-2" (click)="$event.preventDefault()">¿Olvidaste tu contraseña?</a>
-                </div>
+                <label for="contrasena" class="form-label text-slate-500 small fw-semibold text-uppercase tracking-wider mb-2 d-block">
+                  Contraseña
+                </label>
                 <div class="input-container">
                   <input
                     [(ngModel)]="contrasena"
@@ -76,7 +73,7 @@
                       <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
                     </svg>
                   </span>
-                  <button type="button" class="btn border-0 position-absolute end-0 top-50 translate-middle-y text-white-50 px-3 hover-text-white transition-all" (click)="togglePasswordVisibility()" tabindex="-1">
+                  <button type="button" class="btn border-0 position-absolute end-0 top-50 translate-middle-y text-slate-400 px-3 hover-text-dark transition-all" (click)="togglePasswordVisibility()" tabindex="-1">
                     <svg *ngIf="!contrasenaVisible" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
                       <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
                       <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
@@ -115,7 +112,7 @@
         </div>
         
         <div class="text-center mt-4">
-          <p class="text-white-50 small mb-0 font-monospace">© 2024 Technology Perú. V 1.0.0</p>
+          <p class="text-slate-500 small mb-0 font-monospace">© 2024 Technology Perú. V 1.0.0</p>
         </div>
 
       </div>

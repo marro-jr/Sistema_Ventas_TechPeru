@@ -62,6 +62,11 @@ export class Ventas implements OnInit {
 }
 
   guardar(): void {
+    if (!this.fecha || !this.id_cliente || !this.id_vendedor || !this.id_producto || !this.cantidad) {
+      this.mensaje = 'Todos los datos de la venta y el producto son obligatorios para proceder.';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     this.calcularTotales();
 
     const venta = {

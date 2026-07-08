@@ -462,7 +462,94 @@ app.delete("/productos/:id", (req, res) => {
   });
 });
 
-// RUTA PARA VENTAS
+// ==========================================
+// RUTAS PARA REPORTES ADMINISTRATIVOS
+// ==========================================
+
+// 1. Reporte de Ventas Estadísticas (Max, Min, Avg) por Periodo
+app.get("/reportes/ventas-estadisticas", (req, res) => {
+  const { dias } = req.query; // Ejemplo: 1 (hoy), 7 (semana), 30 (mes)
+  let dateCondition = "";
+  if (dias) {
+    dateCondition = `WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL ${dias} DAY)`;
+  }
+
+  const query = `
+    SELECT 
+      MAX(total) as venta_maxima, 
+      MIN(total) as venta_minima, 
+      AVG(total) as venta_promedio,
+      COUNT(id_venta) as total_ventas
+    FROM venta
+    ${dateCondition}
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).json({ error: `Error al calcular estadísticas: ${err}` });
+    } else {
+      res.json(results[0]);
+    }
+  });
+});
+
+// 2. Reporte de Ingresos (Totales agrupados)
+app.get("/reportes/ingresos", (req, res) => {
+  const { dias } = req.query;
+  let dateCondition = "";
+  if (dias) {
+    dateCondition = `WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL ${dias} DAY)`;
+  }
+
+  const query = `
+    SELECT 
+      SUM(total) as ingresos_totales,
+      COUNT(id_venta) as cantidad_ventas
+    FROM venta
+    ${dateCondition}
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).json({ error: `Error al calcular ingresos: ${err}` });
+    } else {
+      res.json(results[0]);
+    }
+  });
+});
+
+// 3. Reporte de Eliminaciones
+app.get("/reportes/eliminaciones", (req, res) => {
+  const { dias } = req.query;
+  let dateCondition = "";
+  if (dias) {
+    dateCondition = `WHERE fecha_eliminacion >= DATE_SUB(CURDATE(), INTERVAL ${dias} DAY)`;
+  }
+
+  // Verifica si la tabla historialEliminacion existe consultando directamente
+  const query = `
+    SELECT * 
+    FROM historialEliminacion
+    ${dateCondition}
+    ORDER BY fecha_eliminacion DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      // Si la tabla no existe (err.errno 1146), devolvemos un array vacío controlado
+      if (err.errno === 1146) {
+         return res.json([]);
+      }
+      res.status(500).json({ error: `Error al obtener historial: ${err}` });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// ==========================================
+// RUTAS PARA VENTAS
+// ==========================================
 
 // Ruta para traer clientes
 app.get("/clientes", (req, res) => {

@@ -1,145 +1,122 @@
-<nav class="navbar navbar-expand-lg" style="background: rgba(26, 58, 92, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1);">
-  <div class="container-fluid px-4 py-1">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #0f172a; border-bottom: 1px solid rgba(255,255,255,0.1);">
+  <div class="container-fluid px-4 py-2">
     <span class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" style="font-size: 1.1rem; letter-spacing: 0.5px;">
-      <img src="logo_empresa.png" alt="Logo TechPerú" style="width: 32px; height: 32px; border-radius: 6px;">
+      <div style="width: 24px; height: 24px; background: #ffffff; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 12px; height: 12px; background: #0f172a; border-radius: 3px;"></div>
+      </div>
       TechPerú
     </span>
 
     <div class="navbar-nav ms-auto">
-      <button class="btn btn-sm text-white px-4" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" type="button" (click)="cerrarSesion()">
-        Cerrar sesión
+      <button class="btn btn-sm fw-medium text-white" style="background: #dc2626; border: none; border-radius: 6px; padding: 0.4rem 1rem; transition: all 0.2s;" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'" type="button" (click)="cerrarSesion()">
+        Cerrar Sesión
       </button>
     </div>
   </div>
 </nav>
 
-<div class="container-fluid px-4 py-5 position-relative" style="background-color: #0b1121; min-height: 100vh; overflow: hidden;">
-  <!-- Background Glow Effects -->
-  <div class="position-absolute rounded-circle blur-effect" style="width: 400px; height: 400px; background: rgba(100, 181, 246, 0.15); top: -100px; left: -100px; filter: blur(100px); z-index: 0;"></div>
-  <div class="position-absolute rounded-circle blur-effect" style="width: 500px; height: 500px; background: rgba(26, 58, 92, 0.4); bottom: -150px; right: -150px; filter: blur(120px); z-index: 0;"></div>
-
-  <!-- Header -->
-  <div class="row mb-5 position-relative" style="z-index: 1;">
-    <div class="col-12">
-      <div class="d-flex align-items-center gap-3 mb-1">
-        <div style="width: 4px; height: 40px; background: linear-gradient(to bottom, #64b5f6, #1a3a5c); border-radius: 4px;"></div>
-        <div>
-          <h1 class="fw-bold mb-1 text-white" style="font-size: 1.8rem; letter-spacing: -0.5px;">
-            Panel de Inicio
-          </h1>
-          <p class="mb-0" style="color: #8fa6c2; font-size: 0.9rem;">
-            Bienvenido, <span class="text-white fw-medium">{{ nombre }}</span> <span class="mx-2">•</span> Rol: <span class="badge" style="background: rgba(100,181,246,0.2); color: #64b5f6; border: 1px solid rgba(100,181,246,0.3);">{{ rol || 'No definido' | uppercase }}</span>
-          </p>
-        </div>
+<!-- Hero Section -->
+<div style="background-color: #e2e8f0; padding: 3rem 1.5rem 6rem 1.5rem; border-bottom: 1px solid #cbd5e1;">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="fw-bold mb-2" style="color: #0f172a; font-size: 2.2rem; letter-spacing: -0.5px;">
+          Panel de Inicio
+        </h1>
+        <p class="mb-0" style="color: #475569; font-size: 1rem; max-width: 600px;">
+          Bienvenido, <span style="color: #0f172a;" class="fw-bold">{{ nombre }}</span>. Tu rol actual es <span class="badge px-2 py-1 ms-1" style="background-color: #334155; color: #ffffff;">{{ rol || 'No definido' | uppercase }}</span>. Selecciona un módulo para comenzar a trabajar.
+        </p>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Mensaje si no hay rol -->
-  <div *ngIf="!rol" class="alert position-relative" style="z-index: 1; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); color: #ffd54f; border-radius: 12px; backdrop-filter: blur(10px);">
+<!-- Main Content -->
+<div class="container-fluid px-4" style="background-color: #f1f5f9; min-height: calc(100vh - 250px); padding-bottom: 4rem;">
+
+  <div *ngIf="!rol" class="alert mt-4" style="background: #fee2e2; border: 1px solid #f87171; color: #991b1b; border-radius: 8px;">
     No se encontró un rol válido para este usuario. Por favor, vuelve a iniciar sesión.
   </div>
 
-  <!-- Opciones Administrador -->
-  <div *ngIf="rol === 'administrador'" class="row g-4 position-relative" style="z-index: 1;">
-    <!-- Card 1 -->
-    <div class="col-md-6 col-lg-3">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(100, 181, 246, 0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 32px rgba(0, 0, 0, 0.2)'">
+  <!-- Opciones del Sistema -->
+  <div *ngIf="rol === 'administrador' || rol === 'vendedor'" class="row g-4" style="margin-top: -3rem;">
+    
+    <!-- Card Gestión de Usuarios (Solo Administrador) -->
+    <div *ngIf="rol === 'administrador'" class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
         <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+            </div>
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">Usuarios</h5>
           </div>
-          <h5 class="fw-bold mb-2">Gestión de Usuarios</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Registrar usuarios, asignar roles y controlar el acceso al sistema.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 10px;" type="button" (click)="irRegistro()" onmouseover="this.style.background='rgba(100, 181, 246, 0.2)'" onmouseout="this.style.background='rgba(100, 181, 246, 0.1)'">Ir a Usuarios</button>
+          <p class="small text-muted mb-4" style="flex-grow: 1;">Registrar personal, asignar roles y controlar el acceso al sistema.</p>
+          <button class="btn w-100 py-2 fw-medium text-white" style="background: #1e3a8a; border-radius: 6px; font-size: 0.9rem;" type="button" (click)="irRegistro()" onmouseover="this.style.background='#172554'" onmouseout="this.style.background='#1e3a8a'">Gestionar</button>
         </div>
       </div>
     </div>
 
-    <!-- Card 2 -->
-    <div class="col-md-6 col-lg-3">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(100, 181, 246, 0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 32px rgba(0, 0, 0, 0.2)'">
+    <!-- Card Inventario -->
+    <div class="col-md-6" [ngClass]="rol === 'administrador' ? 'col-lg-3' : 'col-lg-4'">
+      <div class="card h-100 border-0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
         <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            </div>
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">Inventario</h5>
           </div>
-          <h5 class="fw-bold mb-2">Inventario</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Administrar catálogo de teclados, precios y control de stock.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 10px;" type="button" (click)="irMantenimiento()" onmouseover="this.style.background='rgba(100, 181, 246, 0.2)'" onmouseout="this.style.background='rgba(100, 181, 246, 0.1)'">Ver Inventario</button>
+          <p class="small text-muted mb-4" style="flex-grow: 1;">Administrar catálogo de productos, verificar precios y controlar el stock disponible.</p>
+          <button class="btn w-100 py-2 fw-medium text-white" style="background: #1e3a8a; border-radius: 6px; font-size: 0.9rem;" type="button" (click)="irMantenimiento()" onmouseover="this.style.background='#172554'" onmouseout="this.style.background='#1e3a8a'">Entrar</button>
         </div>
       </div>
     </div>
 
-    <!-- Card 3 -->
-    <div class="col-md-6 col-lg-3">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(100, 181, 246, 0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 32px rgba(0, 0, 0, 0.2)'">
+    <!-- Card Clientes -->
+    <div class="col-md-6" [ngClass]="rol === 'administrador' ? 'col-lg-3' : 'col-lg-4'">
+      <div class="card h-100 border-0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
         <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">Clientes</h5>
           </div>
-          <h5 class="fw-bold mb-2">Clientes</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Cartera de clientes, información de contacto y direcciones.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 10px;" type="button" (click)="irClientes()" onmouseover="this.style.background='rgba(100, 181, 246, 0.2)'" onmouseout="this.style.background='rgba(100, 181, 246, 0.1)'">Gestionar Clientes</button>
+          <p class="small text-muted mb-4" style="flex-grow: 1;">Revisar la cartera de clientes, actualizar información e historiales de compra.</p>
+          <button class="btn w-100 py-2 fw-medium text-white" style="background: #1e3a8a; border-radius: 6px; font-size: 0.9rem;" type="button" (click)="irClientes()" onmouseover="this.style.background='#172554'" onmouseout="this.style.background='#1e3a8a'">Gestionar</button>
         </div>
       </div>
     </div>
 
-    <!-- Card 4 -->
-    <div class="col-md-6 col-lg-3">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 12px 40px rgba(100, 181, 246, 0.15)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 8px 32px rgba(0, 0, 0, 0.2)'">
+    <!-- Card Ventas -->
+    <div class="col-md-6" [ngClass]="rol === 'administrador' ? 'col-lg-3' : 'col-lg-4'">
+      <div class="card h-100 border-0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
         <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width: 40px; height: 40px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            </div>
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">Ventas</h5>
           </div>
-          <h5 class="fw-bold mb-2">Ventas</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Registro de transacciones, facturación y detalles de compra.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: linear-gradient(135deg, #1a3a5c, #1976d2); border: none; color: white; border-radius: 10px;" type="button" (click)="irVentas()" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Ir a Ventas</button>
+          <p class="small text-muted mb-4" style="flex-grow: 1;">Registrar nuevas transacciones, emitir facturación y revisar comprobantes.</p>
+          <button class="btn w-100 py-2 fw-medium text-white" style="background: #1e3a8a; border-radius: 6px; font-size: 0.9rem;" type="button" (click)="irVentas()" onmouseover="this.style.background='#172554'" onmouseout="this.style.background='#1e3a8a'">Operar</button>
         </div>
       </div>
     </div>
 
-  </div>
-
-  <!-- Opciones Vendedor -->
-  <div *ngIf="rol === 'vendedor'" class="row g-4 position-relative" style="z-index: 1;">
-    <!-- Card 1 -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+    <!-- Card Reportes (Solo Administrador) -->
+    <div *ngIf="rol === 'administrador'" class="col-md-6 col-lg-3">
+      <div class="card h-100 border-0" style="background: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
         <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width: 40px; height: 40px; background: #fef9c3; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </div>
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.1rem;">Reportes</h5>
           </div>
-          <h5 class="fw-bold mb-2">Directorio de Clientes</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Agrega nuevos clientes al sistema antes de facturar.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 10px;" type="button" (click)="irClientes()">Clientes</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 2 -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
-        <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-          </div>
-          <h5 class="fw-bold mb-2">Terminal de Ventas</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Procesa nuevas ventas y emite pagos.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: linear-gradient(135deg, #1a3a5c, #1976d2); border: none; color: white; border-radius: 10px;" type="button" (click)="irVentas()">Nueva Venta</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 3 -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card h-100 text-white" style="background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
-        <div class="card-body p-4 d-flex flex-column">
-          <div class="mb-4 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: rgba(100, 181, 246, 0.1); border-radius: 12px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64b5f6" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          </div>
-          <h5 class="fw-bold mb-2">Consultar Stock</h5>
-          <p class="small mb-4" style="color: #8fa6c2; flex-grow: 1;">Revisa disponibilidad de teclados en tiempo real.</p>
-          <button class="btn w-100 py-2 fw-medium" style="background: rgba(100, 181, 246, 0.1); border: 1px solid rgba(100, 181, 246, 0.3); color: #64b5f6; border-radius: 10px;" type="button" (click)="irMantenimiento()">Catálogo</button>
+          <p class="small text-muted mb-4" style="flex-grow: 1;">Inteligencia de negocios, estadísticas de ventas, e historiales del sistema en PDF.</p>
+          <button class="btn w-100 py-2 fw-medium text-white" style="background: #eab308; border-color: #eab308; border-radius: 6px; font-size: 0.9rem;" type="button" (click)="irReportes()" onmouseover="this.style.background='#ca8a04'" onmouseout="this.style.background='#eab308'">Ver Reportes</button>
         </div>
       </div>
     </div>

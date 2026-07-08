@@ -21,7 +21,7 @@ export class Registro implements OnInit {
   correo: string = '';
   nombre: string = '';
   contrasena: string = '';
-  estado: string = 'activo';
+  estado: string = 'Activo';
 
   rolSeleccionado: string = 'administrador';
   usuarioSeleccionado: number | null = null;
@@ -73,6 +73,12 @@ export class Registro implements OnInit {
     this.errorCorreo = '';
     this.errorPass = '';
 
+    if (!this.nombre || !this.correo || !this.estado || (!this.idUsuarioEditando && !this.contrasena)) {
+      this.mensaje = 'Todos los campos (Nombre, Correo, Estado, Contraseña) son obligatorios para guardar.';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (this.idUsuarioEditando) {
       this.modificarUsuario();
       return;
@@ -98,7 +104,6 @@ export class Registro implements OnInit {
       .insertarUsuario(this.correo, this.nombre, this.contrasena, this.estado)
       .subscribe({
         next: (res) => {
-<<<<<<< HEAD
           this.ultimoIdRegistrado = res.id_usuario;
           
           if (this.rolSeleccionado && this.turno) {
@@ -117,16 +122,6 @@ export class Registro implements OnInit {
             this.mensaje = `Usuario registrado exitosamente. ID: ${res.id_usuario}`;
             this.finalizarRegistro();
           }
-=======
-          this.ultimoIdRegistrado = res.id_usuario; 
-          this.mensaje = `Usuario registrado exitosamente. Su ID es: ${res.id_usuario}`;
-          this.correo = '';
-          this.nombre = '';
-          this.contrasena = '';
-          this.estado = '';
-          this.cargarUsuarios();
-          this.cdr.detectChanges();
->>>>>>> 2349a142c93eb9219924e821f28c876a17cd3731
         },
         error: (err) => {
           this.mensaje = `Error: ${err.error?.error || 'No se pudo registrar el usuario'}`;
@@ -139,7 +134,7 @@ export class Registro implements OnInit {
     this.correo = '';
     this.nombre = '';
     this.contrasena = '';
-    this.estado = 'activo';
+    this.estado = 'Activo';
     this.turno = 'mañana';
     this.cargarUsuarios();
     this.cargarAdministradores();
@@ -274,7 +269,7 @@ export class Registro implements OnInit {
     this.correo = '';
     this.nombre = '';
     this.contrasena = '';
-    this.estado = 'activo';
+    this.estado = 'Activo';
     this.errorCorreo = '';
     this.errorPass = '';
   }
@@ -294,26 +289,8 @@ export class Registro implements OnInit {
   }
 
   toggleEstado(usuario: any) {
-<<<<<<< HEAD
     const estadoActual = (usuario.estado || '').toLowerCase();
-    const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
-=======
-  const estadoActual = (usuario.estado || '').toLowerCase();
-const nuevoEstado = estadoActual === 'activo' ? 'inactivo' : 'activo';
-
-  this.registroService.modificarUsuario(usuario.id_usuario, usuario.nombre, nuevoEstado
-  ).subscribe({
-    next: (res) => {
-      usuario.estado = nuevoEstado;
-      this.mensaje = res.message;
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      this.mensaje = `Error: ${err.error?.error || 'No se pudo cambiar estado'}`;
-    }
-  });
-}
->>>>>>> 2349a142c93eb9219924e821f28c876a17cd3731
+    const nuevoEstado = estadoActual === 'activo' ? 'Inactivo' : 'Activo';
 
     this.registroService.modificarUsuario(
       usuario.id_usuario,

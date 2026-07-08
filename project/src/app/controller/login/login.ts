@@ -4,7 +4,7 @@
  * Gestiona la autenticación, roles de usuario, manejo de estados de carga y errores.
  * Refactorizado para incluir validación estricta y mejoras visuales (Glassmorphism).
  */
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LoginService } from '../../services/login-service';
 import { Router } from '@angular/router';
@@ -30,6 +30,10 @@ export class Login implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router,
   ) {}
+
+  ngOnInit(): void {
+    // Inicialización del componente
+  }
 
   togglePasswordVisibility() {
     this.contrasenaVisible = !this.contrasenaVisible;
