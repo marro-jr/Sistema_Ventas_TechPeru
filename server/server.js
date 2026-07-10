@@ -19,9 +19,9 @@ const puerto = 3000;
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "12345",
+  password: "",
   database: "db_tech_peru",
-  port: 3306,
+  port: 3306
 });
 
 db.connect((err) => {
@@ -983,4 +983,317 @@ app.listen(puerto, (err) => {
   } else {
     console.log(`Servidor corriendo en el puerto ${puerto}`);
   }
+});
+
+// 3. Reporte de Ventas, Inventario e Indicadores por Rango de Fechas
+app.get("/reportes/ventas-inventario-indicadores", (req, res) => {
+  const { fecha_inicio, fecha_fin } = req.query;
+
+  let condicionVentas = "WHERE v.estado != 'Cancelada'";
+  let parametrosVentas = [];
+
+  if (fecha_inicio && fecha_fin) {
+    condicionVentas += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
+    parametrosVentas = [fecha_inicio, fecha_fin];
+  }
+
+  // Detalle de ventas por fecha
+  const queryVentasDetalle = `
+    SELECT 
+      v.id_venta,
+      v.fecha,
+      c.nombre AS cliente,
+      u.nombre AS vendedor,
+      p.nombre AS producto,
+      dv.cantidad,
+      dv.precio_unitario,
+      dv.subtotal AS subtotal_detalle,
+      v.total,
+      pa.metodo_pago
+    FROM venta v
+    INNER JOIN cliente c
+      ON v.id_cliente = c.id_cliente
+    INNER JOIN vendedor ve
+      ON v.id_vendedor = ve.id_vendedor
+    INNER JOIN usuario u
+      ON ve.id_usuario = u.id_usuario
+    INNER JOIN detalleventa dv
+      ON v.id_venta = dv.id_venta
+    INNER JOIN producto p
+      ON dv.id_producto = p.id_producto
+    INNER JOIN pago pa
+      ON v.id_venta = pa.id_venta
+    ${condicionVentas}
+    ORDER BY v.fecha DESC;
+  `;
+
+  // Indicadores generales del periodo
+  const queryIndicadoresVentas = `
+    SELECT
+      COUNT(v.id_venta) AS total_ventas,
+      IFNULL(SUM(v.total), 0) AS ingresos_periodo,
+      IFNULL(AVG(v.total), 0) AS promedio_venta
+    FROM venta v
+    ${condicionVentas};
+  `;
+
+  // Total de unidades vendidas
+  const queryUnidadesVendidas = `
+    SELECT
+      IFNULL(SUM(dv.cantidad), 0) AS unidades_vendidas
+    FROM venta v
+    INNER JOIN detalleventa dv
+      ON v.id_venta = dv.id_venta
+    ${condicionVentas};
+  `;
+
+  // Producto más vendido en el periodo
+  const queryProductoMasVendido = `
+    SELECT
+      p.nombre AS producto,
+      IFNULL(SUM(dv.cantidad), 0) AS cantidad_vendida
+    FROM venta v
+    INNER JOIN detalleventa dv
+      ON v.id_venta = dv.id_venta
+    INNER JOIN producto p
+      ON dv.id_producto = p.id_producto
+    ${condicionVentas}
+    GROUP BY p.id_producto, p.nombre
+    ORDER BY cantidad_vendida DESC
+    LIMIT 1;
+  `;
+
+  // Control de inventario general
+  const queryInventario = `
+    SELECT
+      p.id_producto,
+      p.nombre AS producto,
+      p.marca,
+      p.modelo,
+      p.precio,
+      i.stock_actual,
+      i.stock_minimo,
+      CASE
+        WHEN i.stock_actual <= i.stock_minimo THEN 'Bajo stock'
+        ELSE 'Stock suficiente'
+      END AS estado_stock
+    FROM producto p
+    INNER JOIN inventario i
+      ON p.id_producto = i.id_producto
+    ORDER BY i.stock_actual ASC;
+  `;
+
+  // Producto con menor stock
+  const queryProductoMenorStock = `
+    SELECT
+      p.nombre AS producto,
+      i.stock_actual,
+      i.stock_minimo
+    FROM producto p
+    INNER JOIN inventario i
+      ON p.id_producto = i.id_producto
+    ORDER BY i.stock_actual ASC
+    LIMIT 1;
+  `;
+
+  db.query(queryVentasDetalle, parametrosVentas, (errVentas, ventasDetalle) => {
+    if (errVentas) {
+      return res.status(500).json({ error: `Error al obtener ventas por fecha: ${errVentas}` });
+    }
+
+    db.query(queryIndicadoresVentas, parametrosVentas, (errIndicadores, indicadoresVentas) => {
+      if (errIndicadores) {
+        return res.status(500).json({ error: `Error al obtener indicadores de ventas: ${errIndicadores}` });
+      }
+
+      db.query(queryUnidadesVendidas, parametrosVentas, (errUnidades, unidadesVendidas) => {
+        if (errUnidades) {
+          return res.status(500).json({ error: `Error al obtener unidades vendidas: ${errUnidades}` });
+        }
+
+        db.query(queryProductoMasVendido, parametrosVentas, (errMasVendido, productoMasVendido) => {
+          if (errMasVendido) {
+            return res.status(500).json({ error: `Error al obtener producto más vendido: ${errMasVendido}` });
+          }
+
+          db.query(queryInventario, (errInventario, inventario) => {
+            if (errInventario) {
+              return res.status(500).json({ error: `Error al obtener inventario: ${errInventario}` });
+            }
+
+            db.query(queryProductoMenorStock, (errMenorStock, productoMenorStock) => {
+              if (errMenorStock) {
+                return res.status(500).json({ error: `Error al obtener producto con menor stock: ${errMenorStock}` });
+              }
+
+              res.json({
+                ventasDetalle: ventasDetalle,
+                inventario: inventario,
+                indicadores: {
+                  total_ventas: indicadoresVentas[0]?.total_ventas || 0,
+                  ingresos_periodo: indicadoresVentas[0]?.ingresos_periodo || 0,
+                  promedio_venta: indicadoresVentas[0]?.promedio_venta || 0,
+                  unidades_vendidas: unidadesVendidas[0]?.unidades_vendidas || 0,
+                  producto_mas_vendido: productoMasVendido[0]?.producto || 'Sin datos',
+                  cantidad_producto_mas_vendido: productoMasVendido[0]?.cantidad_vendida || 0,
+                  producto_menor_stock: productoMenorStock[0]?.producto || 'Sin datos',
+                  stock_menor: productoMenorStock[0]?.stock_actual || 0
+                }
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// 3. Reporte de Ventas por Fechas
+app.get("/reportes/ventas-por-fechas", (req, res) => {
+  const { fecha_inicio, fecha_fin } = req.query;
+
+  let condicion = "WHERE v.estado != 'Cancelada'";
+  let parametros = [];
+
+  if (fecha_inicio && fecha_fin) {
+    condicion += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
+    parametros = [fecha_inicio, fecha_fin];
+  }
+
+  const query = `
+    SELECT 
+      v.id_venta,
+      v.fecha,
+      c.nombre AS cliente,
+      u.nombre AS vendedor,
+      p.nombre AS producto,
+      dv.cantidad,
+      dv.precio_unitario,
+      dv.subtotal AS subtotal_detalle,
+      v.descuento,
+      v.total,
+      pa.metodo_pago
+    FROM venta v
+    INNER JOIN cliente c
+      ON v.id_cliente = c.id_cliente
+    INNER JOIN vendedor ve
+      ON v.id_vendedor = ve.id_vendedor
+    INNER JOIN usuario u
+      ON ve.id_usuario = u.id_usuario
+    INNER JOIN detalleventa dv
+      ON v.id_venta = dv.id_venta
+    INNER JOIN producto p
+      ON dv.id_producto = p.id_producto
+    INNER JOIN pago pa
+      ON v.id_venta = pa.id_venta
+    ${condicion}
+    ORDER BY v.fecha DESC;
+  `;
+
+  db.query(query, parametros, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: `Error al obtener ventas por fechas: ${err}` });
+    }
+
+    res.json(results);
+  });
+});
+
+
+// 4. Reporte de Indicadores de Ventas
+app.get("/reportes/indicadores-ventas", (req, res) => {
+  const { fecha_inicio, fecha_fin } = req.query;
+
+  let condicion = "WHERE v.estado != 'Cancelada'";
+  let parametros = [];
+
+  if (fecha_inicio && fecha_fin) {
+    condicion += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
+    parametros = [fecha_inicio, fecha_fin];
+  }
+
+  const queryIndicadores = `
+    SELECT
+      COUNT(v.id_venta) AS total_ventas,
+      IFNULL(SUM(v.total), 0) AS ingresos_totales,
+      IFNULL(AVG(v.total), 0) AS promedio_venta,
+      IFNULL(MAX(v.total), 0) AS venta_mayor,
+      IFNULL(MIN(v.total), 0) AS venta_menor
+    FROM venta v
+    ${condicion};
+  `;
+
+  const queryUnidades = `
+    SELECT
+      IFNULL(SUM(dv.cantidad), 0) AS unidades_vendidas
+    FROM venta v
+    INNER JOIN detalleventa dv
+      ON v.id_venta = dv.id_venta
+    ${condicion};
+  `;
+
+  const queryProductoMasVendido = `
+    SELECT
+      p.nombre AS producto,
+      IFNULL(SUM(dv.cantidad), 0) AS cantidad_vendida
+    FROM venta v
+    INNER JOIN detalleventa dv
+      ON v.id_venta = dv.id_venta
+    INNER JOIN producto p
+      ON dv.id_producto = p.id_producto
+    ${condicion}
+    GROUP BY p.id_producto, p.nombre
+    ORDER BY cantidad_vendida DESC
+    LIMIT 1;
+  `;
+
+  const queryMetodoPago = `
+    SELECT
+      pa.metodo_pago,
+      COUNT(pa.id_pago) AS cantidad
+    FROM venta v
+    INNER JOIN pago pa
+      ON v.id_venta = pa.id_venta
+    ${condicion}
+    GROUP BY pa.metodo_pago
+    ORDER BY cantidad DESC
+    LIMIT 1;
+  `;
+
+  db.query(queryIndicadores, parametros, (err1, indicadores) => {
+    if (err1) {
+      return res.status(500).json({ error: `Error al obtener indicadores: ${err1}` });
+    }
+
+    db.query(queryUnidades, parametros, (err2, unidades) => {
+      if (err2) {
+        return res.status(500).json({ error: `Error al obtener unidades vendidas: ${err2}` });
+      }
+
+      db.query(queryProductoMasVendido, parametros, (err3, productoMasVendido) => {
+        if (err3) {
+          return res.status(500).json({ error: `Error al obtener producto más vendido: ${err3}` });
+        }
+
+        db.query(queryMetodoPago, parametros, (err4, metodoPago) => {
+          if (err4) {
+            return res.status(500).json({ error: `Error al obtener método de pago: ${err4}` });
+          }
+
+          res.json({
+            total_ventas: indicadores[0]?.total_ventas || 0,
+            ingresos_totales: indicadores[0]?.ingresos_totales || 0,
+            promedio_venta: indicadores[0]?.promedio_venta || 0,
+            venta_mayor: indicadores[0]?.venta_mayor || 0,
+            venta_menor: indicadores[0]?.venta_menor || 0,
+            unidades_vendidas: unidades[0]?.unidades_vendidas || 0,
+            producto_mas_vendido: productoMasVendido[0]?.producto || 'Sin datos',
+            cantidad_producto_mas_vendido: productoMasVendido[0]?.cantidad_vendida || 0,
+            metodo_pago_mas_usado: metodoPago[0]?.metodo_pago || 'Sin datos',
+            cantidad_metodo_pago: metodoPago[0]?.cantidad || 0
+          });
+        });
+      });
+    });
+  });
 });
