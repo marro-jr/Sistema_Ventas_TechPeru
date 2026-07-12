@@ -19,7 +19,7 @@ const puerto = 3000;
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",
+  password: "12345",
   database: "db_tech_peru",
   port: 3306
 });
@@ -481,11 +481,11 @@ app.get("/reportes/ventas-analitico", (req, res) => {
 
   const queryResumen = `
     SELECT 
-      SUM(total) as ingresos_totales,
+      IFNULL(SUM(total), 0) as ingresos_totales,
       COUNT(id_venta) as total_ventas,
-      MAX(total) as venta_maxima, 
-      MIN(total) as venta_minima, 
-      AVG(total) as venta_promedio
+      IFNULL(MAX(total), 0) as venta_maxima, 
+      IFNULL(MIN(total), 0) as venta_minima, 
+      IFNULL(AVG(total), 0) as venta_promedio
     FROM venta
     ${dateCondition}
   `;
@@ -498,10 +498,10 @@ app.get("/reportes/ventas-analitico", (req, res) => {
     FROM venta
     ${dateCondition}
     GROUP BY DATE(fecha)
-    ORDER BY DATE(fecha) ASC
+    ORDER BY DATE(fecha) DESC
   `;
 
-  const queryTopVentas = `
+  const queryTodasVentas = `
     SELECT 
       id_venta,
       fecha,
@@ -509,20 +509,20 @@ app.get("/reportes/ventas-analitico", (req, res) => {
       id_vendedor
     FROM venta
     ${dateCondition}
-    ORDER BY total DESC
-    LIMIT 5
+    ORDER BY fecha DESC
   `;
 
-  const queryBottomVentas = `
+  const queryVentasPorMes = `
     SELECT 
-      id_venta,
-      fecha,
-      total,
-      id_vendedor
+      DATE_FORMAT(fecha, '%Y-%m') as mes,
+      COUNT(id_venta) as cantidad,
+      IFNULL(SUM(total), 0) as total_mes,
+      IFNULL(MAX(total), 0) as max_mes,
+      IFNULL(MIN(total), 0) as min_mes
     FROM venta
     ${dateCondition}
-    ORDER BY total ASC
-    LIMIT 5
+    GROUP BY DATE_FORMAT(fecha, '%Y-%m')
+    ORDER BY mes DESC
   `;
 
   db.query(queryResumen, queryParams, (err, resultadosResumen) => {
@@ -531,17 +531,34 @@ app.get("/reportes/ventas-analitico", (req, res) => {
     db.query(queryDesgloseDiario, queryParams, (err2, resultadosDesglose) => {
       if (err2) return res.status(500).json({ error: `Error desglose: ${err2}` });
 
-      db.query(queryTopVentas, queryParams, (err3, resultadosTop) => {
-        if (err3) return res.status(500).json({ error: `Error top: ${err3}` });
+      db.query(queryTodasVentas, queryParams, (err3, resultadosTodas) => {
+        if (err3) return res.status(500).json({ error: `Error todas las ventas: ${err3}` });
 
-        db.query(queryBottomVentas, queryParams, (err4, resultadosBottom) => {
-          if (err4) return res.status(500).json({ error: `Error bottom: ${err4}` });
+        db.query(queryVentasPorMes, queryParams, (err4, resultadosMes) => {
+          if (err4) return res.status(500).json({ error: `Error ventas por mes: ${err4}` });
+
+          let idMax = null;
+          let idMin = null;
+          if (resultadosTodas && resultadosTodas.length > 0) {
+            let maxObj = resultadosTodas[0];
+            let minObj = resultadosTodas[0];
+            for (let v of resultadosTodas) {
+              if (v.total > maxObj.total) maxObj = v;
+              if (v.total < minObj.total) minObj = v;
+            }
+            idMax = maxObj.id_venta;
+            idMin = minObj.id_venta;
+          }
 
           res.json({
-            resumen: resultadosResumen[0],
+            resumen: {
+              ...resultadosResumen[0],
+              id_venta_maxima: idMax,
+              id_venta_minima: idMin
+            },
             desgloseDiario: resultadosDesglose,
-            topVentas: resultadosTop,
-            bottomVentas: resultadosBottom
+            todasVentas: resultadosTodas,
+            ventasPorMes: resultadosMes
           });
         });
       });
@@ -549,38 +566,37 @@ app.get("/reportes/ventas-analitico", (req, res) => {
   });
 });
 
-// 2. Reporte de Eliminados/Anulados
+// 2. Reporte de Ventas Canceladas / Eliminación Lógica
 app.get("/reportes/eliminaciones", (req, res) => {
   const { fecha_inicio, fecha_fin } = req.query;
-  let dateConditionVenta = "";
-  let dateConditionHistorial = "";
-  let queryParamsVenta = [];
-  let queryParamsHistorial = [];
+  let dateCondition = "WHERE h.tabla_afectada = 'Venta'";
+  let queryParams = [];
 
   if (fecha_inicio && fecha_fin) {
-    dateConditionVenta = `AND DATE(fecha) >= ? AND DATE(fecha) <= ?`;
-    dateConditionHistorial = `WHERE DATE(fecha_eliminacion) >= ? AND DATE(fecha_eliminacion) <= ?`;
-    queryParamsVenta = [fecha_inicio, fecha_fin];
-    queryParamsHistorial = [fecha_inicio, fecha_fin];
+    dateCondition += ` AND DATE(h.fecha_eliminacion) >= ? AND DATE(h.fecha_eliminacion) <= ?`;
+    queryParams = [fecha_inicio, fecha_fin];
   }
 
-  // Traer historial físico (solo si existe)
-  const queryHistorial = `
-    SELECT id_registro_eliminado as id_registro, tabla_afectada as tabla, fecha_eliminacion as fecha, 'Eliminación Física' as accion, '' as detalle
-    FROM historialEliminacion
-    ${dateConditionHistorial}
-    ORDER BY fecha_eliminacion DESC
+  // Traer ventas canceladas desde la tabla HistorialEliminacion
+  const queryCanceladas = `
+    SELECT 
+      h.id_registro_eliminado as id_registro,
+      h.tabla_afectada as tabla,
+      h.fecha_eliminacion as fecha,
+      v.total as monto,
+      c.nombre as cliente
+    FROM HistorialEliminacion h
+    LEFT JOIN venta v ON h.id_registro_eliminado = v.id_venta
+    LEFT JOIN cliente c ON v.id_cliente = c.id_cliente
+    ${dateCondition}
+    ORDER BY h.fecha_eliminacion DESC
   `;
 
-  db.query(queryHistorial, queryParamsHistorial, (errHistorial, resultadosHistorial) => {
-    if (errHistorial) {
-      if (errHistorial.errno === 1146) {
-         return res.json([]);
-      }
-      return res.status(500).json({ error: errHistorial.message });
+  db.query(queryCanceladas, queryParams, (err, resultados) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
     }
-
-    res.json(resultadosHistorial);
+    res.json(resultados);
   });
 });
 
@@ -651,12 +667,8 @@ app.get("/ventas-detalle", (req, res) => {
             v.fecha,
             c.nombre AS cliente,
             u.nombre AS vendedor,
-            p.id_producto,
-            p.nombre AS producto,
-            dv.cantidad,
-            dv.precio_unitario,
-            dv.descuento AS descuento_detalle,
-            dv.subtotal AS subtotal_detalle,
+            GROUP_CONCAT(p.nombre SEPARATOR ', ') AS producto,
+            SUM(dv.cantidad) AS cantidad,
             v.subtotal,
             v.descuento,
             v.total,
@@ -681,7 +693,8 @@ app.get("/ventas-detalle", (req, res) => {
         INNER JOIN producto p
         ON dv.id_producto = p.id_producto
         INNER JOIN pago pa
-        ON v.id_venta = pa.id_venta;
+        ON v.id_venta = pa.id_venta
+        GROUP BY v.id_venta;
     `;
 
   db.query(query, (err, results) => {
@@ -695,95 +708,99 @@ app.get("/ventas-detalle", (req, res) => {
   });
 });
 
-// Registrar venta con detalle y pago
-app.post("/ventas", (req, res) => {
-  const { fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia } = req.body;
+// Obtener recibo completo
+app.get("/ventas/:id/recibo", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const vResult = await new Promise((resolve, reject) => {
+      db.query(`SELECT v.id_venta, v.fecha, c.nombre AS cliente, c.telefono AS cliente_telefono, c.dni AS cliente_dni, c.correo AS cliente_correo, u.nombre AS vendedor, pa.metodo_pago, pa.moneda, v.total
+                FROM venta v JOIN cliente c ON v.id_cliente = c.id_cliente
+                JOIN vendedor ve ON v.id_vendedor = ve.id_vendedor JOIN usuario u ON ve.id_usuario = u.id_usuario
+                JOIN pago pa ON v.id_venta = pa.id_venta WHERE v.id_venta = ?`, [id], (err, r) => err ? reject(err) : resolve(r));
+    });
+    if(!vResult.length) return res.status(404).json({error:"No encontrado"});
+    const pResult = await new Promise((resolve, reject) => {
+      db.query(`SELECT p.nombre, dv.precio_unitario AS precio, dv.cantidad, dv.subtotal
+                FROM detalleventa dv JOIN producto p ON dv.id_producto = p.id_producto WHERE dv.id_venta = ?`, [id], (err, r) => err ? reject(err) : resolve(r));
+    });
+    const recibo = { ...vResult[0], productos: pResult };
+    res.json(recibo);
+  } catch (error) { res.status(500).json({error: error.message}); }
+});
 
-  db.beginTransaction((err) => {
+// Registrar venta con detalle y pago
+app.post("/ventas", async (req, res) => {
+  const { fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, productos, metodo_pago, monto, moneda, estado_pago, fecha_pago } = req.body;
+
+  db.beginTransaction(async (err) => {
     if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-    const stockQuery = `SELECT stock_actual FROM inventario WHERE id_producto = ? FOR UPDATE;`;
-    db.query(stockQuery, [id_producto], (err, stockResult) => {
-      if (err) return db.rollback(() => res.status(500).json({ error: `Error al verificar stock: ${err}` }));
-      if (stockResult.length === 0) return db.rollback(() => res.status(404).json({ error: "Producto no encontrado en inventario" }));
-      
-      const stockActual = stockResult[0].stock_actual;
-      if (cantidad > stockActual) return db.rollback(() => res.status(400).json({ error: `Stock insuficiente. Disponible: ${stockActual}` }));
-
-      const ventaQuery = `INSERT INTO venta (fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor) VALUES (?, ?, ?, ?, ?, ?, ?);`;
-      db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor], (err, ventaResult) => {
-        if (err) return db.rollback(() => res.status(500).json({ error: `Error al registrar venta: ${err}` }));
-        
-        const idVenta = ventaResult.insertId;
-        const detalleQuery = `INSERT INTO detalleventa (id_venta, id_producto, cantidad, precio_unitario, descuento, subtotal) VALUES (?, ?, ?, ?, ?, ?);`;
-        
-        db.query(detalleQuery, [idVenta, id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle], (err) => {
-          if (err) return db.rollback(() => res.status(500).json({ error: `Error al registrar detalle: ${err}` }));
-          
-          const pagoQuery = `INSERT INTO pago (metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id_venta) VALUES (?, ?, ?, ?, ?, ?, ?);`;
-          db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, idVenta], (err) => {
-            if (err) return db.rollback(() => res.status(500).json({ error: `Error al registrar pago: ${err}` }));
-            
-            const actualizarStock = `UPDATE inventario SET stock_actual = stock_actual - ? WHERE id_producto = ?;`;
-            db.query(actualizarStock, [cantidad, id_producto], (err) => {
-              if (err) return db.rollback(() => res.status(500).json({ error: `Error al actualizar stock: ${err}` }));
-              
-              db.commit((err) => {
-                if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
-                res.json({ message: "Venta registrada exitosamente", id_venta: idVenta });
-              });
-            });
-          });
-        });
+    try {
+      // 1. Insertar Venta
+      const ventaResult = await new Promise((resolve, reject) => {
+        db.query(`INSERT INTO venta (fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor) VALUES (?, ?, ?, ?, ?, ?, ?);`, 
+        [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor], (err, result) => err ? reject(err) : resolve(result));
       });
-    });
+      const idVenta = ventaResult.insertId;
+
+      // 2. Insertar Pago
+      await new Promise((resolve, reject) => {
+        db.query(`INSERT INTO pago (metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id_venta) VALUES (?, ?, ?, ?, ?, NULL, ?);`, 
+        [metodo_pago, monto, moneda, estado_pago, fecha_pago, idVenta], (err, result) => err ? reject(err) : resolve(result));
+      });
+
+      // 3. Procesar Productos
+      for (const prod of productos) {
+        const stockResult = await new Promise((resolve, reject) => {
+          db.query(`SELECT stock_actual FROM inventario WHERE id_producto = ? FOR UPDATE;`, [prod.id_producto], (err, res) => err ? reject(err) : resolve(res));
+        });
+        
+        if (stockResult.length === 0) throw new Error(`Producto no encontrado.`);
+        if (prod.cantidad > stockResult[0].stock_actual) throw new Error(`Stock insuficiente para el producto.`);
+
+        await new Promise((resolve, reject) => {
+          db.query(`INSERT INTO detalleventa (id_venta, id_producto, cantidad, precio_unitario, descuento, subtotal) VALUES (?, ?, ?, ?, ?, ?);`, 
+          [idVenta, prod.id_producto, prod.cantidad, prod.precio_unitario, 0, prod.subtotal], (err, result) => err ? reject(err) : resolve(result));
+        });
+
+        await new Promise((resolve, reject) => {
+          db.query(`UPDATE inventario SET stock_actual = stock_actual - ? WHERE id_producto = ?;`, 
+          [prod.cantidad, prod.id_producto], (err, result) => err ? reject(err) : resolve(result));
+        });
+      }
+
+      db.commit((err) => {
+        if (err) throw err;
+        res.json({ message: "Venta registrada exitosamente", id_venta: idVenta });
+      });
+
+    } catch (error) {
+      db.rollback(() => {
+        res.status(500).json({ error: error.message || `Error al procesar la transacción` });
+      });
+    }
   });
 });
 
 // Modificar venta con detalle y pago
 app.put("/ventas/:id", (req, res) => {
   const { id } = req.params;
-  const { fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia } = req.body;
+  const { fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, metodo_pago, monto, moneda, estado_pago, fecha_pago } = req.body;
 
   db.beginTransaction((err) => {
     if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-    // BUG-15 Fix: Obtener cantidad original para recalcular el stock
-    db.query('SELECT cantidad FROM detalleventa WHERE id_venta = ? LIMIT 1', [id], (err, results) => {
-      if (err) return db.rollback(() => res.status(500).json({ error: `Error al obtener detalle: ${err}` }));
-      
-      const cantidadOriginal = results.length > 0 ? results[0].cantidad : cantidad;
-      const diferencia = cantidadOriginal - cantidad; // Si original 5, nueva 2, diff 3 (se suman 3 al stock). Si original 2, nueva 5, diff -3 (se restan 3).
+    const ventaQuery = `UPDATE venta SET fecha = ?, subtotal = ?, descuento = ?, total = ?, estado = ?, id_cliente = ?, id_vendedor = ? WHERE id_venta = ?;`;
+    db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id], (err) => {
+      if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar venta: ${err}` }));
 
-      const ventaQuery = `UPDATE venta SET fecha = ?, subtotal = ?, descuento = ?, total = ?, estado = ?, id_cliente = ?, id_vendedor = ? WHERE id_venta = ?;`;
-      db.query(ventaQuery, [fecha, subtotal, descuento, total, estado, id_cliente, id_vendedor, id], (err) => {
-        if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar venta: ${err}` }));
-
-        const detalleQuery = `UPDATE detalleventa SET id_producto = ?, cantidad = ?, precio_unitario = ?, descuento = ?, subtotal = ? WHERE id_venta = ?;`;
-        db.query(detalleQuery, [id_producto, cantidad, precio_unitario, descuento_detalle, subtotal_detalle, id], (err) => {
-          if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar detalle: ${err}` }));
-
-          const pagoQuery = `UPDATE pago SET metodo_pago = ?, monto = ?, moneda = ?, estado_pago = ?, fecha_pago = ?, referencia = ? WHERE id_venta = ?;`;
-          db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, referencia, id], (err) => {
-            if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar pago: ${err}` }));
-            
-            if (diferencia !== 0) {
-              const inventarioQuery = `UPDATE inventario SET stock_actual = stock_actual + ? WHERE id_producto = ?;`;
-              db.query(inventarioQuery, [diferencia, id_producto], (err) => {
-                if (err) return db.rollback(() => res.status(500).json({ error: `Error al ajustar inventario: ${err}` }));
-                
-                db.commit((err) => {
-                  if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
-                  res.json({ message: "Venta modificada exitosamente" });
-                });
-              });
-            } else {
-              db.commit((err) => {
-                if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
-                res.json({ message: "Venta modificada exitosamente" });
-              });
-            }
-          });
+      const pagoQuery = `UPDATE pago SET metodo_pago = ?, monto = ?, moneda = ?, estado_pago = ?, fecha_pago = ? WHERE id_venta = ?;`;
+      db.query(pagoQuery, [metodo_pago, monto, moneda, estado_pago, fecha_pago, id], (err) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al modificar pago: ${err}` }));
+        
+        db.commit((err) => {
+          if (err) return db.rollback(() => res.status(500).json({ error: `Error al procesar la transacción: ${err}` }));
+          res.json({ message: "Venta modificada exitosamente" });
         });
       });
     });
@@ -794,20 +811,28 @@ app.put("/ventas/:id", (req, res) => {
 app.put("/ventas/:id/eliminar-logico", (req, res) => {
   const { id } = req.params;
 
-  const query = `
-        UPDATE venta
-        SET estado = 'Cancelada'
-        WHERE id_venta = ?;
-    `;
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).json({ error: "Error al iniciar la transacción." });
 
-  db.query(query, [id], (err) => {
-    if (err) {
-      res
-        .status(500)
-        .json({ error: `Error al eliminar lógicamente la venta: ${err}` });
-    } else {
-      res.json({ message: "Venta eliminada lógicamente" });
-    }
+    const queryUpdate = `
+          UPDATE venta
+          SET estado = 'Cancelada'
+          WHERE id_venta = ?;
+      `;
+
+    db.query(queryUpdate, [id], (err) => {
+      if (err) return db.rollback(() => res.status(500).json({ error: `Error al cancelar la venta: ${err}` }));
+      
+      const insertHistorial = `INSERT INTO HistorialEliminacion (tabla_afectada, id_registro_eliminado, motivo) VALUES ('Venta', ?, 'Venta Cancelada');`;
+      db.query(insertHistorial, [id], (err) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al guardar en historial: ${err}` }));
+        
+        db.commit((err) => {
+          if (err) return db.rollback(() => res.status(500).json({ error: "Error al hacer commit." }));
+          res.json({ message: "Venta cancelada exitosamente." });
+        });
+      });
+    });
   });
 });
 
@@ -875,7 +900,7 @@ app.delete("/ventas/:id", (req, res) => {
 // Ruta para traer todos los clientes
 app.get("/clientes", (req, res) => {
   const query = `
-        SELECT id_cliente, nombre, telefono, direccion, correo
+        SELECT id_cliente, nombre, dni, telefono, direccion, correo
         FROM cliente;
     `;
 
@@ -894,6 +919,7 @@ app.get("/clientes-ventas", (req, res) => {
         SELECT
             c.id_cliente,
             c.nombre,
+            c.dni,
             c.telefono,
             c.direccion,
             c.correo,
@@ -919,14 +945,15 @@ app.get("/clientes-ventas", (req, res) => {
 
 // Ruta para registrar cliente
 app.post("/clientes", (req, res) => {
-  const { nombre, telefono, direccion, correo } = req.body;
+  const { nombre, dni, telefono, direccion, correo } = req.body;
 
   const query = `
-        INSERT INTO cliente (nombre, telefono, direccion, correo)
-        VALUES (?, ?, ?, ?);
+        INSERT INTO cliente (nombre, dni, telefono, direccion, correo)
+        VALUES (?, ?, ?, ?, ?);
     `;
-
-  db.query(query, [nombre, telefono, direccion, correo], (err, results) => {
+  db.query(
+    query,
+    [nombre, dni, telefono, direccion, correo], (err, results) => {
     if (err) {
       res.status(500).json({ error: `Error al registrar cliente: ${err}` });
     } else {
@@ -941,15 +968,16 @@ app.post("/clientes", (req, res) => {
 // Ruta para modificar cliente
 app.put("/clientes/:id", (req, res) => {
   const { id } = req.params;
-  const { nombre, telefono, direccion, correo } = req.body;
+  const { nombre, dni, telefono, direccion, correo } = req.body;
 
   const query = `
         UPDATE cliente
-        SET nombre = ?, telefono = ?, direccion = ?, correo = ?
+        SET nombre = ?, dni = ?, telefono = ?, direccion = ?, correo = ?
         WHERE id_cliente = ?;
     `;
-
-  db.query(query, [nombre, telefono, direccion, correo, id], (err) => {
+  db.query(
+    query,
+    [nombre, dni, telefono, direccion, correo, id], (err) => {
     if (err) {
       res.status(500).json({ error: `Error al modificar cliente: ${err}` });
     } else {

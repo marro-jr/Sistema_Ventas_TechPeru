@@ -127,7 +127,8 @@
                     </td>
                     <td class="py-3 align-middle">
                       <div>{{ producto.marca }} {{ producto.modelo }}</div>
-                      <div class="small text-muted">{{ producto.precio | currency:'S/ ' }}</div>
+                      <div class="small text-muted" style="font-size: 0.75rem;">Switch: {{ producto.tipo_switch || '-' }} | Layout: {{ producto.tipo_layout || '-' }}</div>
+                      <div class="small text-muted fw-bold mt-1">{{ producto.precio | currency:'S/ ' }}</div>
                     </td>
                     <td class="py-3 align-middle">
                       <div class="fw-medium" [class.text-danger]="producto.stock_actual <= producto.stock_minimo" [class.text-success]="producto.stock_actual > producto.stock_minimo">

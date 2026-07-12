@@ -96,8 +96,8 @@
               <line x1="12" y1="9" x2="18" y2="15"></line>
             </svg>
           </div>
-          <h6 class="fw-bold mb-2">Historial de Eliminaciones</h6>
-          <p class="small text-muted mb-0">Registro de seguridad de todas las eliminaciones físicas realizadas.</p>
+          <h6 class="fw-bold mb-2">Ventas Canceladas</h6>
+          <p class="small text-muted mb-0">Registro de todas las ventas que han sido canceladas en el sistema.</p>
         </div>
       </div>
     </div>
@@ -142,14 +142,7 @@
       </div>
     </div>
 
-    <!-- Reporte futuro -->
-    <div class="col-md-4">
-      <div class="card h-100 border-0" style="background: transparent; border: 2px dashed #cbd5e1 !important;">
-        <div class="card-body d-flex align-items-center justify-content-center text-muted">
-          Próximamente...
-        </div>
-      </div>
-    </div>
+
 
   </div>
 
@@ -175,12 +168,8 @@
           <option [ngValue]="365">Último Año</option>
         </select>
 
-        <input type="date" class="form-control form-control-sm" style="width: auto;" [(ngModel)]="fechaInicio">
-        <input type="date" class="form-control form-control-sm" style="width: auto;" [(ngModel)]="fechaFin">
-
-        <button class="btn btn-sm btn-outline-primary" (click)="generarPrevisualizacion()" [disabled]="cargando">
-          Buscar
-        </button>
+        <input type="date" class="form-control form-control-sm" style="width: auto;" [(ngModel)]="fechaInicio" (change)="generarPrevisualizacion()">
+        <input type="date" class="form-control form-control-sm" style="width: auto;" [(ngModel)]="fechaFin" (change)="generarPrevisualizacion()">
 
         <button class="btn btn-sm text-white d-flex align-items-center gap-2"
                 style="background: #2563eb; border-color: #2563eb;"
@@ -206,6 +195,8 @@
 
       <!-- Tabla Reporte Estadísticas -->
       <div *ngIf="!cargando && reporteSeleccionado === 'estadisticas' && resultadosAnalitico">
+        <h6 class="px-4 pt-3 fw-bold text-dark text-uppercase">Reporte de Estadística de Ventas</h6>
+
         <div class="table-responsive mb-4">
           <table class="table table-hover align-middle mb-0">
             <thead style="background-color: #f8fafc;">
@@ -216,74 +207,85 @@
             </thead>
             <tbody>
               <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Venta Máxima</td>
+                <td class="py-3 px-4 fw-bold text-dark">
+                  Venta Máxima 
+                  <span *ngIf="resultadosAnalitico.resumen?.id_venta_maxima" class="badge bg-secondary ms-2">ID #{{resultadosAnalitico.resumen.id_venta_maxima}}</span>
+                </td>
                 <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_maxima || 0) | number:'1.2-2' }}</td>
               </tr>
               <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Venta Mínima</td>
+                <td class="py-3 px-4 fw-bold text-dark">
+                  Venta Mínima 
+                  <span *ngIf="resultadosAnalitico.resumen?.id_venta_minima" class="badge bg-secondary ms-2">ID #{{resultadosAnalitico.resumen.id_venta_minima}}</span>
+                </td>
                 <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_minima || 0) | number:'1.2-2' }}</td>
               </tr>
               <tr>
                 <td class="py-3 px-4 fw-bold text-dark">Venta Promedio</td>
                 <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_promedio || 0) | number:'1.2-2' }}</td>
               </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Total Transacciones</td>
-                <td class="py-3 px-4 text-end text-dark fw-medium">{{ resultadosAnalitico.resumen?.total_ventas || 0 }} ventas</td>
-              </tr>
             </tbody>
           </table>
         </div>
 
-        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">TOP 5 MEJORES VENTAS</h6>
-        <div class="table-responsive mb-4">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #f8fafc;">
-              <tr>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Posición</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let v of resultadosAnalitico.topVentas; let i = index">
-                <td class="py-3 px-4 fw-medium text-dark">{{ i + 1 }}°</td>
-                <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
-                <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
-                <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
-              </tr>
-              <tr *ngIf="!resultadosAnalitico.topVentas?.length">
-                <td colspan="4" class="py-4 text-center text-muted">Sin ventas en el periodo seleccionado</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <ng-container *ngIf="!esPeriodoLargo">
+          <h6 class="px-4 fw-bold text-dark mt-4 mb-3">DETALLE DE TODAS LAS VENTAS</h6>
+          <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle mb-0">
+              <thead style="background-color: #f8fafc;">
+                <tr>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Posición</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let v of resultadosAnalitico.todasVentas; let i = index">
+                  <td class="py-3 px-4 fw-medium text-dark">{{ i + 1 }}°</td>
+                  <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
+                  <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
+                </tr>
+                <tr *ngIf="!resultadosAnalitico.todasVentas?.length">
+                  <td colspan="4" class="py-4 text-center text-muted">Sin ventas en el periodo seleccionado</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
 
-        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">LAS 5 VENTAS MÁS BAJAS</h6>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #f8fafc;">
-              <tr>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Posición</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let v of resultadosAnalitico.bottomVentas; let i = index">
-                <td class="py-3 px-4 fw-medium text-dark">{{ i + 1 }}°</td>
-                <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
-                <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
-                <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
-              </tr>
-              <tr *ngIf="!resultadosAnalitico.bottomVentas?.length">
-                <td colspan="4" class="py-4 text-center text-muted">Sin ventas en el periodo seleccionado</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <ng-container *ngIf="esPeriodoLargo">
+          <div *ngFor="let grupo of ventasAgrupadas" class="mb-4">
+            <h6 class="px-4 fw-bold text-dark mt-4 mb-3 text-uppercase border-bottom pb-2">Ventas de {{ grupo.mes }}</h6>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">N°</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let v of grupo.ventas; let i = index">
+                    <td class="py-3 px-4 fw-medium text-dark">{{ i + 1 }}°</td>
+                    <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
+                    <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
+                    <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr *ngIf="!grupo.ventas.length">
+                    <td colspan="4" class="py-4 text-center text-muted">Sin ventas en este mes</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div *ngIf="!ventasAgrupadas.length" class="py-4 text-center text-muted">
+            Sin ventas en el periodo seleccionado
+          </div>
+        </ng-container>
       </div>
 
       <!-- Tabla Reporte Ingresos -->
@@ -305,7 +307,7 @@
           </table>
         </div>
 
-        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">DESGLOSE DIARIO DE INGRESOS</h6>
+        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">REPORTE DE INGRESOS</h6>
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0">
             <thead style="background-color: #f8fafc;">
@@ -317,7 +319,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let d of resultadosAnalitico.desgloseDiario">
-                <td class="py-3 px-4 text-muted">{{ d.fecha_diaria | date:'EEEE, dd MMMM yyyy' }}</td>
+                <td class="py-3 px-4 text-muted">{{ d.fecha_diaria | date:'dd/MM/yyyy' }}</td>
                 <td class="py-3 px-4 text-center fw-medium text-dark">{{ d.cantidad_diaria }}</td>
                 <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ d.total_diario | number:'1.2-2' }}</td>
               </tr>
@@ -330,25 +332,28 @@
       </div>
 
       <!-- Tabla Reporte Eliminaciones -->
-      <div class="table-responsive" *ngIf="!cargando && reporteSeleccionado === 'eliminaciones' && resultadosEliminaciones">
+      <div class="table-responsive mb-4" *ngIf="!cargando && reporteSeleccionado === 'eliminaciones' && resultadosEliminaciones">
+        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">VENTAS CANCELADAS</h6>
         <table class="table table-hover align-middle mb-0">
           <thead style="background-color: #f8fafc;">
             <tr>
               <th class="py-3 px-4 text-muted fw-medium small text-uppercase">N°</th>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Tabla Afectada</th>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Eliminado</th>
-              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha Eliminación</th>
+              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
+              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Cliente</th>
+              <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Monto</th>
+              <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha Cancelación</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let e of resultadosEliminaciones; let i = index">
               <td class="py-3 px-4 text-muted">{{ i + 1 }}</td>
-              <td class="py-3 px-4 fw-medium">{{ e.tabla | uppercase }}</td>
-              <td class="py-3 px-4"><span class="badge bg-secondary">ID: {{ e.id_registro }}</span></td>
+              <td class="py-3 px-4 fw-bold text-dark">#{{ e.id_registro }}</td>
+              <td class="py-3 px-4 text-muted">{{ e.cliente || 'Desconocido' }}</td>
+              <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ e.monto | number:'1.2-2' }}</td>
               <td class="py-3 px-4 text-muted">{{ e.fecha | date:'medium' }}</td>
             </tr>
             <tr *ngIf="resultadosEliminaciones.length === 0">
-              <td colspan="4" class="py-4 text-center text-muted">No se encontraron eliminaciones en este periodo.</td>
+              <td colspan="5" class="py-4 text-center text-muted">No se encontraron ventas canceladas en este periodo.</td>
             </tr>
           </tbody>
         </table>

@@ -18,6 +18,7 @@ export class Clientes implements OnInit {
   idClienteEditando: number | null = null;
 
   nombre = '';
+  dni = '';
   telefono = '';
   direccion = '';
   correo = '';
@@ -49,6 +50,7 @@ export class Clientes implements OnInit {
     }
     const cliente = {
       nombre: this.nombre,
+      dni: this.dni,
       telefono: this.telefono,
       direccion: this.direccion,
       correo: this.correo,
@@ -104,8 +106,10 @@ export class Clientes implements OnInit {
   }
 
   editar(cliente: any): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     this.idClienteEditando = cliente.id_cliente;
     this.nombre = cliente.nombre;
+    this.dni = cliente.dni || '';
     this.telefono = cliente.telefono;
     this.direccion = cliente.direccion;
     this.correo = cliente.correo;
@@ -130,9 +134,11 @@ export class Clientes implements OnInit {
   limpiarFormulario(): void {
     this.idClienteEditando = null;
     this.nombre = '';
+    this.dni = '';
     this.telefono = '';
     this.direccion = '';
     this.correo = '';
+    
     this.cdr.detectChanges();
   }
 }

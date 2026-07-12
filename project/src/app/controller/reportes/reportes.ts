@@ -41,6 +41,8 @@ export class Reportes implements OnInit {
   resultadosVentasInventario: any = null;
 
   cargando: boolean = false;
+  esPeriodoLargo: boolean = false;
+  ventasAgrupadas: { mes: string, ventas: any[] }[] = [];
   mensaje: string = '';
 
   constructor(
@@ -151,17 +153,44 @@ export class Reportes implements OnInit {
     this.ejecutarConsulta();
   }
 
- ejecutarConsulta(): void {
-  this.cargando = true;
-  this.mensaje = '';
+  agruparPorMes(ventas: any[]): { mes: string, ventas: any[] }[] {
+    if (!ventas) return [];
+    const grupos: { [key: string]: any[] } = {};
+    ventas.forEach(v => {
+      const fecha = new Date(v.fecha);
+      const mesNombre = fecha.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+      const mesClave = mesNombre.charAt(0).toUpperCase() + mesNombre.slice(1);
+      
+      if (!grupos[mesClave]) grupos[mesClave] = [];
+      grupos[mesClave].push(v);
+    });
+    return Object.keys(grupos).map(k => ({ mes: k, ventas: grupos[k] }));
+  }
 
-  if (
-    this.reporteSeleccionado === 'estadisticas' ||
+  ejecutarConsulta(): void {
+    if (this.fechaInicio && this.fechaFin) {
+      const diffTime = Math.abs(new Date(this.fechaFin).getTime() - new Date(this.fechaInicio).getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      this.esPeriodoLargo = diffDays > 31;
+    } else {
+      this.esPeriodoLargo = false;
+    }
+
+    this.cargando = true;
+    this.mensaje = '';
+
+    if (
+      this.reporteSeleccionado === 'estadisticas' ||
     this.reporteSeleccionado === 'ingresos'
   ) {
     this.reportesService.obtenerAnaliticoVentas(this.fechaInicio, this.fechaFin).subscribe({
       next: (data) => {
         this.resultadosAnalitico = data;
+        if (this.esPeriodoLargo && data.todasVentas) {
+          this.ventasAgrupadas = this.agruparPorMes(data.todasVentas);
+        } else {
+          this.ventasAgrupadas = [];
+        }
         this.cargando = false;
         this.cdr.detectChanges();
       },
@@ -180,7 +209,7 @@ export class Reportes implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.mensaje = err.error?.error || 'Error al obtener el historial de eliminaciones.';
+        this.mensaje = err.error?.error || 'Error al obtener el registro de ventas canceladas.';
         this.resultadosEliminaciones = [];
         this.cargando = false;
         this.cdr.detectChanges();
@@ -275,7 +304,7 @@ export class Reportes implements OnInit {
       const nReporte = `REP-${Date.now().toString().slice(-6)}`;
 
       const titulos: Record<string, string> = {
-        estadisticas: 'REPORTE DETALLADO DE VENTAS',
+        estadisticas: 'REPORTE DE ESTADÍSTICA DE VENTAS',
         ingresos: 'REPORTE DE INGRESOS DIARIOS',
         eliminaciones: 'HISTORIAL DE ELIMINACIONES',
         ventasFechas: 'REPORTE DE VENTAS POR FECHAS',
@@ -283,17 +312,7 @@ export class Reportes implements OnInit {
         ventasInventario: 'REPORTE DE VENTAS, INVENTARIO E INDICADORES',
       };
 
-      const nroMap: Record<string, string> = {
-        estadisticas: '01',
-        ingresos: '02',
-        eliminaciones: '03',
-        ventasFechas: '04',
-        indicadoresVentas: '05',
-        ventasInventario: '06',
-      };
-
       const titulo = titulos[this.reporteSeleccionado] || 'REPORTE ADMINISTRATIVO';
-      const nroInforme = nroMap[this.reporteSeleccionado] || '00';
 
       const NEGRO: [number, number, number] = [20, 20, 20];
       const OSCURO: [number, number, number] = [60, 60, 60];
@@ -349,7 +368,7 @@ export class Reportes implements OnInit {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
         doc.setTextColor(...BLANCO);
-        doc.text(`INFORME N° ${nroInforme}  —  ${titulo}`, M, 21);
+        doc.text(titulo, M, 21);
 
         doc.setFillColor(...FONDO);
         doc.rect(0, pageH - 10, pageW, 10, 'F');
@@ -446,11 +465,15 @@ export class Reportes implements OnInit {
           startY: Y,
           head: [['MÉTRICA', 'VALOR']],
           body: [
-            ['Venta Máxima', `S/ ${this.formatearMonto(r?.venta_maxima || 0)}`],
-            ['Venta Mínima', `S/ ${this.formatearMonto(r?.venta_minima || 0)}`],
+            [
+              r?.id_venta_maxima ? `Venta Máxima (ID: #${r.id_venta_maxima})` : 'Venta Máxima',
+              `S/ ${this.formatearMonto(r?.venta_maxima || 0)}`
+            ],
+            [
+              r?.id_venta_minima ? `Venta Mínima (ID: #${r.id_venta_minima})` : 'Venta Mínima',
+              `S/ ${this.formatearMonto(r?.venta_minima || 0)}`
+            ],
             ['Venta Promedio', `S/ ${this.formatearMonto(r?.venta_promedio || 0)}`],
-            ['Total Transacciones', `${r?.total_ventas || 0} ventas`],
-            ['Ingresos Totales', `S/ ${this.formatearMonto(r?.ingresos_totales || 0)}`],
           ],
           theme: 'grid',
           styles: { lineColor, lineWidth: 0.1 },
@@ -463,59 +486,59 @@ export class Reportes implements OnInit {
 
         Y = (doc as any).lastAutoTable.finalY + 6;
 
-        seccion('TOP 5 MEJORES VENTAS');
+        if (this.esPeriodoLargo && this.ventasAgrupadas.length > 0) {
+          this.ventasAgrupadas.forEach((grupo, idx) => {
+            if (idx > 0) {
+              Y = (doc as any).lastAutoTable.finalY + 8;
+            }
+            seccion(`VENTAS DE ${grupo.mes.toUpperCase()}`);
+            
+            const tbody = grupo.ventas.map((v: any, i: number) => [
+              `${i + 1}°`,
+              `#${v.id_venta}`,
+              new Date(v.fecha).toLocaleDateString('es-PE'),
+              `S/ ${this.formatearMonto(v.total)}`,
+            ]);
 
-        const topBody = (this.resultadosAnalitico.topVentas || []).map((v: any, i: number) => [
-          `${i + 1}°`,
-          `#${v.id_venta}`,
-          new Date(v.fecha).toLocaleDateString('es-PE'),
-          `S/ ${this.formatearMonto(v.total)}`,
-        ]);
+            autoTable(doc, {
+              startY: Y,
+              head: [['N°', 'ID VENTA', 'FECHA', 'MONTO']],
+              body: tbody,
+              theme: 'grid',
+              styles: { lineColor, lineWidth: 0.1 },
+              headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+              bodyStyles: { fontSize: 8, textColor: bodyText },
+              columnStyles: { 0: { cellWidth: 20 }, 3: { halign: 'right', fontStyle: 'bold' } },
+              margin: { left: M, right: M, bottom: 14 },
+              didDrawPage: onNuevaPagina,
+            });
+          });
+        } else {
+          seccion('DETALLE DE TODAS LAS VENTAS');
+          const todasBody = (this.resultadosAnalitico.todasVentas || []).map((v: any, i: number) => [
+            `${i + 1}°`,
+            `#${v.id_venta}`,
+            new Date(v.fecha).toLocaleDateString('es-PE'),
+            `S/ ${this.formatearMonto(v.total)}`,
+          ]);
 
-        if (!topBody.length) {
-          topBody.push(['-', '-', 'Sin ventas en el periodo seleccionado', '-']);
+          if (!todasBody.length) {
+            todasBody.push(['-', '-', 'Sin ventas en el periodo seleccionado', '-']);
+          }
+
+          autoTable(doc, {
+            startY: Y,
+            head: [['N°', 'ID VENTA', 'FECHA', 'MONTO']],
+            body: todasBody,
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: { 0: { cellWidth: 20 }, 3: { halign: 'right', fontStyle: 'bold' } },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
         }
-
-        autoTable(doc, {
-          startY: Y,
-          head: [['POSICIÓN', 'ID VENTA', 'FECHA', 'MONTO']],
-          body: topBody,
-          theme: 'grid',
-          styles: { lineColor, lineWidth: 0.1 },
-          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-          bodyStyles: { fontSize: 8, textColor: bodyText },
-          columnStyles: { 0: { cellWidth: 20 }, 3: { halign: 'right', fontStyle: 'bold' } },
-          margin: { left: M, right: M, bottom: 14 },
-          didDrawPage: onNuevaPagina,
-        });
-
-        Y = (doc as any).lastAutoTable.finalY + 6;
-
-        seccion('LAS 5 VENTAS MÁS BAJAS');
-
-        const botBody = (this.resultadosAnalitico.bottomVentas || []).map((v: any, i: number) => [
-          `${i + 1}°`,
-          `#${v.id_venta}`,
-          new Date(v.fecha).toLocaleDateString('es-PE'),
-          `S/ ${this.formatearMonto(v.total)}`,
-        ]);
-
-        if (!botBody.length) {
-          botBody.push(['-', '-', 'Sin ventas en el periodo seleccionado', '-']);
-        }
-
-        autoTable(doc, {
-          startY: Y,
-          head: [['POSICIÓN', 'ID VENTA', 'FECHA', 'MONTO']],
-          body: botBody,
-          theme: 'grid',
-          styles: { lineColor, lineWidth: 0.1 },
-          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-          bodyStyles: { fontSize: 8, textColor: bodyText },
-          columnStyles: { 0: { cellWidth: 20 }, 3: { halign: 'right', fontStyle: 'bold' } },
-          margin: { left: M, right: M, bottom: 14 },
-          didDrawPage: onNuevaPagina,
-        });
 
       } else if (this.reporteSeleccionado === 'ingresos' && this.resultadosAnalitico) {
         const r = this.resultadosAnalitico.resumen;
@@ -537,15 +560,10 @@ export class Reportes implements OnInit {
 
         Y = (doc as any).lastAutoTable.finalY + 6;
 
-        seccion('DESGLOSE DIARIO DE INGRESOS');
+        seccion('REPORTE DE INGRESOS');
 
         const desBody = (this.resultadosAnalitico.desgloseDiario || []).map((d: any) => [
-          new Date(d.fecha_diaria).toLocaleDateString('es-PE', {
-            weekday: 'long',
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-          }),
+          new Date(d.fecha_diaria).toLocaleDateString('es-PE'),
           `${d.cantidad_diaria}`,
           `S/ ${this.formatearMonto(d.total_diario)}`,
         ]);
@@ -575,8 +593,8 @@ export class Reportes implements OnInit {
 
         autoTable(doc, {
           startY: Y,
-          head: [['TOTAL REGISTROS ELIMINADOS']],
-          body: [[`${this.resultadosEliminaciones.length} registros`]],
+          head: [['TOTAL VENTAS CANCELADAS']],
+          body: [[`${this.resultadosEliminaciones.length} ventas`]],
           theme: 'grid',
           styles: { lineColor, lineWidth: 0.1 },
           headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
@@ -587,23 +605,23 @@ export class Reportes implements OnInit {
 
         Y = (doc as any).lastAutoTable.finalY + 6;
 
-        seccion('AUDITORÍA DE ELIMINACIONES');
+        seccion('DETALLE DE VENTAS CANCELADAS');
 
-        const elBody = (this.resultadosEliminaciones || []).map((e, i) => [
+        const elBody = (this.resultadosEliminaciones || []).map((e: any, i: number) => [
           `${i + 1}`,
           `#${e.id_registro || 'N/A'}`,
-          (e.tabla || '-').toUpperCase(),
-          e.fecha ? new Date(e.fecha).toLocaleDateString('es-PE') : '-',
-          e.fecha ? new Date(e.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '-',
+          e.cliente || '-',
+          `S/ ${this.formatearMonto(e.monto)}`,
+          e.fecha ? new Date(e.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
         ]);
 
         if (!elBody.length) {
-          elBody.push(['-', '-', 'Sin registros en el periodo seleccionado', '-', '-']);
+          elBody.push(['-', '-', 'Sin ventas canceladas en el periodo seleccionado', '-', '-']);
         }
 
         autoTable(doc, {
           startY: Y,
-          head: [['N°', 'ID REGISTRO', 'TABLA AFECTADA', 'FECHA', 'HORA']],
+          head: [['N°', 'ID VENTA', 'CLIENTE', 'MONTO', 'FECHA CANCELACIÓN']],
           body: elBody,
           theme: 'grid',
           styles: { lineColor, lineWidth: 0.1 },
@@ -612,6 +630,7 @@ export class Reportes implements OnInit {
           columnStyles: {
             0: { cellWidth: 15 },
             1: { cellWidth: 30, fontStyle: 'bold' },
+            3: { halign: 'right', fontStyle: 'bold' },
           },
           margin: { left: M, right: M, bottom: 14 },
           didDrawPage: onNuevaPagina,

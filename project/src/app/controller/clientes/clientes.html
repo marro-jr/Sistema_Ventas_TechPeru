@@ -50,6 +50,10 @@
                 <input class="form-control" [(ngModel)]="nombre" name="nombre" />
               </div>
               <div class="col-12">
+                <label class="form-label small text-muted mb-1">DNI</label>
+                <input class="form-control" [(ngModel)]="dni" name="dni" placeholder="Opcional" />
+              </div>
+              <div class="col-12">
                 <label class="form-label small text-muted mb-1">Teléfono</label>
                 <input class="form-control" [(ngModel)]="telefono" name="telefono" />
               </div>
@@ -103,6 +107,7 @@
                     </td>
                     <td class="py-3 align-middle">
                       <div>{{ cliente.telefono }}</div>
+                      <div class="small text-muted" *ngIf="cliente.dni">DNI: {{ cliente.dni }}</div>
                       <div class="small text-muted">{{ cliente.correo }}</div>
                     </td>
                     <td class="py-3 align-middle">

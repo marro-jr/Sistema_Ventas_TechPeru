@@ -65,41 +65,56 @@
                   <option *ngFor="let vendedor of vendedores" [ngValue]="vendedor.id_vendedor">{{ vendedor.nombre }}</option>
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">Estado Venta</label>
-                <select class="form-select" [(ngModel)]="estado" name="estado">
-                  <option value="Pagada">Pagada</option>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Cancelada">Cancelada</option>
+
+            </div>
+
+            <h6 class="fw-bold mb-3" style="color: #2563eb">2. Carrito de Compras</h6>
+            
+            <div class="row g-3 mb-3" *ngIf="!idVentaEditando">
+              <div class="col-md-5">
+                <label class="form-label small text-muted mb-1">Producto</label>
+                <select class="form-select" [(ngModel)]="productoSeleccionado" name="productoSeleccionado">
+                  <option [ngValue]="null">Seleccione producto</option>
+                  <option *ngFor="let producto of productosInventario" [ngValue]="producto.id_producto">{{ producto.nombre }} - Stock: {{ producto.stock_actual }} (S/ {{ producto.precio }})</option>
                 </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Cantidad</label>
+                <input type="number" class="form-control" [(ngModel)]="cantidadSeleccionada" name="cantidadSeleccionada" min="1" />
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary w-100 fw-medium" (click)="agregarAlCarrito()">Agregar al Carrito</button>
               </div>
             </div>
 
-            <h6 class="fw-bold mb-3" style="color: #2563eb">2. Producto e Inventario</h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
-                <label class="form-label small text-muted mb-1">Producto a descontar</label>
-                <select class="form-select" [(ngModel)]="id_producto" name="id_producto" (change)="seleccionarProducto()" [disabled]="idVentaEditando !== null">
-                  <option [ngValue]="null">Seleccione producto</option>
-                  <option *ngFor="let producto of productosInventario" [ngValue]="producto.id_producto">{{ producto.nombre }} - Stock: {{ producto.stock_actual }}</option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Cantidad</label>
-                <input type="number" class="form-control" [(ngModel)]="cantidad" name="cantidad" (input)="calcularTotales()" [disabled]="idVentaEditando !== null" />
-              </div>
-              <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Precio Unit.</label>
-                <input type="number" class="form-control" [(ngModel)]="precio_unitario" name="precio_unitario" (input)="calcularTotales()" />
-              </div>
-              <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Dcto. Prod.</label>
-                <input type="number" class="form-control" [(ngModel)]="descuento_detalle" name="descuento_detalle" (input)="calcularTotales()" />
-              </div>
-              <div class="col-md-2">
-                <label class="form-label small text-muted mb-1">Subtotal Prod.</label>
-                <input type="number" class="form-control" [(ngModel)]="subtotal_detalle" name="subtotal_detalle" readonly />
-              </div>
+            <div class="table-responsive mb-4">
+              <table class="table table-bordered mb-0">
+                <thead class="bg-light text-secondary">
+                  <tr>
+                    <th class="small fw-normal">Producto</th>
+                    <th class="small fw-normal text-center">Cantidad</th>
+                    <th class="small fw-normal text-end">P. Unitario</th>
+                    <th class="small fw-normal text-end">Subtotal</th>
+                    <th class="small fw-normal text-center" *ngIf="!idVentaEditando">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of carrito; let i = index">
+                    <td class="align-middle fw-medium">{{ item.nombre }}</td>
+                    <td class="align-middle text-center">{{ item.cantidad }}</td>
+                    <td class="align-middle text-end">S/ {{ item.precio_unitario | number:'1.2-2' }}</td>
+                    <td class="align-middle text-end fw-bold">S/ {{ item.subtotal | number:'1.2-2' }}</td>
+                    <td class="align-middle text-center" *ngIf="!idVentaEditando">
+                      <button class="btn btn-sm btn-outline-danger py-0" (click)="eliminarDelCarrito(i)">Eliminar</button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="carrito.length === 0">
+                    <td [attr.colspan]="idVentaEditando ? 4 : 5" class="text-center text-muted small py-3">
+                      {{ idVentaEditando ? 'No se puede editar los productos de una venta ya realizada. Cancele la venta si hay un error.' : 'El carrito está vacío.' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <h6 class="fw-bold mb-3" style="color: #2563eb">3. Información de Pago</h6>
@@ -122,19 +137,13 @@
               </div>
               <div class="col-md-2">
                 <label class="form-label small text-muted mb-1">Estado Pago</label>
-                <select class="form-select" [(ngModel)]="estado_pago" name="estado_pago">
+                <select class="form-select" [(ngModel)]="estado_pago" name="estado_pago" disabled>
                   <option value="Pagado">Pagado</option>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Rechazado">Rechazado</option>
                 </select>
               </div>
               <div class="col-md-2">
                 <label class="form-label small text-muted mb-1">Fecha Pago</label>
                 <input type="date" class="form-control" [(ngModel)]="fecha_pago" name="fecha_pago" />
-              </div>
-              <div class="col-md-3">
-                <label class="form-label small text-muted mb-1">Referencia / Operación</label>
-                <input type="text" class="form-control" [(ngModel)]="referencia" name="referencia" placeholder="N° de comprobante" />
               </div>
             </div>
 
@@ -205,7 +214,7 @@
                     </td>
                     <td class="py-3 align-middle">
                       <div class="fw-medium">{{ venta.producto }}</div>
-                      <div class="small text-muted">{{ venta.cantidad }} uni. x {{ venta.precio_unitario | currency:'S/' }}</div>
+                      <div class="small text-muted">{{ venta.cantidad }} uni. en total</div>
                     </td>
                     <td class="py-3 align-middle">
                       <div class="fw-bold text-success">{{ venta.total | currency:'S/ ' }}</div>
@@ -218,8 +227,9 @@
                     </td>
                     <td class="py-3 px-4 align-middle text-end">
                       <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn btn-sm text-white" style="background: #2563eb; border-color: #2563eb;" (click)="reimprimirComprobante(venta.id_venta)">PDF</button>
                         <button class="btn btn-sm text-dark" style="background: #eab308; border-color: #eab308;" (click)="editar(venta)">Modificar</button>
-                        <button class="btn btn-sm text-white" style="background: #dc2626; border-color: #dc2626;" (click)="eliminarFisico(venta.id_venta)">Eliminar</button>
+                        <button class="btn btn-sm text-white" style="background: #dc2626; border-color: #dc2626;" (click)="cancelarVenta(venta.id_venta)" *ngIf="venta.estado !== 'Cancelada'">Cancelar</button>
                       </div>
                     </td>
                   </tr>
@@ -234,4 +244,64 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal Comprobante / Recibo -->
+  <div *ngIf="mostrarRecibo" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(15, 23, 42, 0.75); z-index: 1050; backdrop-filter: blur(4px);">
+    <div class="card border-0" style="width: 400px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+      <div class="card-header bg-white py-3 border-bottom-0 d-flex align-items-center justify-content-between rounded-top" style="border-radius: 12px 12px 0 0;">
+        <h6 class="mb-0 fw-bold d-flex align-items-center gap-2 text-dark">
+          <div style="width: 32px; height: 32px; background: #dcfce7; color: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          Transacción Exitosa
+        </h6>
+      </div>
+      <div class="card-body p-4 pt-1 text-center">
+        <h4 class="fw-bold text-dark mb-1">Comprobante N° {{ reciboDatos?.id_venta }}</h4>
+        <p class="text-muted small mb-4">{{ reciboDatos?.fecha | date:'dd/MM/yyyy' }}</p>
+        
+        <div class="p-3 bg-light rounded text-start mb-4" style="border: 1px dashed #cbd5e1;">
+          <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+            <span class="text-muted small">Cliente:</span>
+            <span class="fw-medium text-dark text-end" style="max-width: 65%;">{{ reciboDatos?.cliente }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+            <span class="text-muted small">Teléfono:</span>
+            <span class="fw-medium text-dark text-end" style="max-width: 65%;">{{ reciboDatos?.cliente_telefono }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+            <span class="text-muted small">DNI:</span>
+            <span class="fw-medium text-dark text-end" style="max-width: 65%;">{{ reciboDatos?.cliente_dni }}</span>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between text-muted small fw-bold mb-1 border-bottom pb-1">
+              <span>PRODUCTOS ({{ reciboDatos?.productos?.length }})</span>
+              <span>SUBTOTAL</span>
+            </div>
+            <div *ngFor="let prod of reciboDatos?.productos" class="d-flex justify-content-between mb-1">
+              <span class="text-dark small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">{{ prod.cantidad }}x {{ prod.nombre }}</span>
+              <span class="text-dark small">S/ {{ prod.subtotal | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Método:</span>
+            <span class="fw-medium text-dark">{{ reciboDatos?.metodo_pago }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+            <span class="fw-bold text-dark">TOTAL PAGADO:</span>
+            <span class="fw-bold text-success fs-5">S/ {{ reciboDatos?.total | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn flex-grow-1 fw-medium" style="background: #2563eb; color: white;" (click)="generarPDFRecibo()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1 mb-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Generar PDF
+          </button>
+          <button class="btn btn-outline-secondary flex-grow-1 fw-medium" (click)="cerrarRecibo()">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

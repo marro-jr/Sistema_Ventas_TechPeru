@@ -31,6 +31,10 @@ export class VentasService {
     return this.http.get(`${this.apiUrl}/ventas-detalle`);
   }
 
+  obtenerRecibo(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/ventas/${id}/recibo`);
+  }
+
   registrarVenta(venta: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/ventas`, venta);
   }
@@ -40,6 +44,10 @@ export class VentasService {
   }
 
 
+
+  eliminarLogico(id: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/ventas/${id}/eliminar-logico`, {});
+  }
 
   eliminarFisico(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/ventas/${id}`);

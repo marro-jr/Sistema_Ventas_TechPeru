@@ -8,9 +8,9 @@ import { Inicio } from './controller/inicio/inicio';
 import { Reportes } from './controller/reportes/reportes';
 
 export const routes: Routes = [
- { path: '', redirectTo: 'reportes', pathMatch: 'full' },
+ { path: '', redirectTo: 'login', pathMatch: 'full' },
 { path: 'login', component: Login },
-{ path: 'inicio', component: Reportes },
+{ path: 'inicio', component: Inicio },
 { path: 'registro', component: Registro },
 { path: 'mantenimiento', component: Mantenimiento },
 { path: 'clientes', component: Clientes },
