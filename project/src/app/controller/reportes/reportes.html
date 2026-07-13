@@ -402,127 +402,178 @@
         </div>
       </div>
 
-      <!-- NUEVO: Indicadores de Ventas -->
-      <div *ngIf="!cargando && reporteSeleccionado === 'indicadoresVentas' && resultadosIndicadoresVentas">
-        <h6 class="px-4 fw-bold text-dark mt-4 mb-3">INDICADORES DE VENTAS</h6>
+      <!-- NUEVO: Indicadores de Ventas SEGÚN WORD -->
+<div *ngIf="!cargando && reporteSeleccionado === 'indicadoresVentas' && resultadosIndicadoresVentas">
 
-        <div class="row g-3 px-4 mb-4">
-          <div class="col-md-4">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Total de ventas</p>
-              <h5 class="fw-bold mb-0">{{ resultadosIndicadoresVentas.total_ventas || 0 }} ventas</h5>
-            </div>
-          </div>
+  <h6 class="px-4 fw-bold text-dark mt-4 mb-3">
+    INDICADORES DE VENTAS
+  </h6>
 
-          <div class="col-md-4">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Ingresos totales</p>
-              <h5 class="fw-bold mb-0">S/ {{ (resultadosIndicadoresVentas.ingresos_totales || 0) | number:'1.2-2' }}</h5>
-            </div>
-          </div>
+  <div class="row g-3 px-4 mb-4">
 
-          <div class="col-md-4">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Promedio de venta</p>
-              <h5 class="fw-bold mb-0">S/ {{ (resultadosIndicadoresVentas.promedio_venta || 0) | number:'1.2-2' }}</h5>
-            </div>
-          </div>
+    <!-- INDICADOR DE EFICACIA -->
+    <div class="col-md-6">
+      <div class="p-3 bg-white border rounded shadow-sm h-100">
+        <p class="text-muted small mb-1">
+          {{ resultadosIndicadoresVentas.eficacia?.tipo }}
+        </p>
 
-          <div class="col-md-4">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Venta mayor</p>
-              <h5 class="fw-bold mb-0">S/ {{ (resultadosIndicadoresVentas.venta_mayor || 0) | number:'1.2-2' }}</h5>
-            </div>
-          </div>
+        <h6 class="fw-bold mb-2">
+          {{ resultadosIndicadoresVentas.eficacia?.nombre }}
+        </h6>
 
-          <div class="col-md-4">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Venta menor</p>
-              <h5 class="fw-bold mb-0">S/ {{ (resultadosIndicadoresVentas.venta_menor || 0) | number:'1.2-2' }}</h5>
-            </div>
-          </div>
+        <p class="small text-muted mb-2">
+          {{ resultadosIndicadoresVentas.eficacia?.descripcion }}
+        </p>
 
-          <div class="col-md-4">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Unidades vendidas</p>
-              <h5 class="fw-bold mb-0">{{ resultadosIndicadoresVentas.unidades_vendidas || 0 }} unidades</h5>
-            </div>
-          </div>
+        <p class="small mb-1">
+          <strong>Ventas finalizadas:</strong>
+          {{ resultadosIndicadoresVentas.eficacia?.ventas_finalizadas }}
+        </p>
 
-          <div class="col-md-6">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Producto más vendido</p>
-              <h6 class="fw-bold mb-0">
-                {{ resultadosIndicadoresVentas.producto_mas_vendido || 'Sin datos' }}
-                <span class="text-muted">({{ resultadosIndicadoresVentas.cantidad_producto_mas_vendido || 0 }})</span>
-              </h6>
-            </div>
-          </div>
+        <p class="small mb-1">
+          <strong>Total solicitudes de clientes:</strong>
+          {{ resultadosIndicadoresVentas.eficacia?.total_solicitudes_clientes }}
+        </p>
 
-          <div class="col-md-6">
-            <div class="p-3 bg-white border rounded shadow-sm">
-              <p class="text-muted small mb-1">Método de pago más usado</p>
-              <h6 class="fw-bold mb-0">
-                {{ resultadosIndicadoresVentas.metodo_pago_mas_usado || 'Sin datos' }}
-                <span class="text-muted">({{ resultadosIndicadoresVentas.cantidad_metodo_pago || 0 }})</span>
-              </h6>
-            </div>
-          </div>
-        </div>
+        <p class="small text-muted mb-2">
+          <strong>Fórmula:</strong>
+          {{ resultadosIndicadoresVentas.eficacia?.formula }}
+        </p>
 
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #f8fafc;">
-              <tr>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Indicador</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Total de ventas</td>
-                <td class="py-3 px-4 text-end">{{ resultadosIndicadoresVentas.total_ventas || 0 }} ventas</td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Ingresos totales</td>
-                <td class="py-3 px-4 text-end">S/ {{ (resultadosIndicadoresVentas.ingresos_totales || 0) | number:'1.2-2' }}</td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Promedio de venta</td>
-                <td class="py-3 px-4 text-end">S/ {{ (resultadosIndicadoresVentas.promedio_venta || 0) | number:'1.2-2' }}</td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Venta mayor</td>
-                <td class="py-3 px-4 text-end">S/ {{ (resultadosIndicadoresVentas.venta_mayor || 0) | number:'1.2-2' }}</td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Venta menor</td>
-                <td class="py-3 px-4 text-end">S/ {{ (resultadosIndicadoresVentas.venta_menor || 0) | number:'1.2-2' }}</td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Unidades vendidas</td>
-                <td class="py-3 px-4 text-end">{{ resultadosIndicadoresVentas.unidades_vendidas || 0 }} unidades</td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Producto más vendido</td>
-                <td class="py-3 px-4 text-end">
-                  {{ resultadosIndicadoresVentas.producto_mas_vendido || 'Sin datos' }}
-                  ({{ resultadosIndicadoresVentas.cantidad_producto_mas_vendido || 0 }})
-                </td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 fw-bold text-dark">Método de pago más usado</td>
-                <td class="py-3 px-4 text-end">
-                  {{ resultadosIndicadoresVentas.metodo_pago_mas_usado || 'Sin datos' }}
-                  ({{ resultadosIndicadoresVentas.cantidad_metodo_pago || 0 }})
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h5 class="fw-bold text-primary mb-0">
+          {{ resultadosIndicadoresVentas.eficacia?.nivel_ventas_completadas_porcentaje }}%
+        </h5>
       </div>
-
     </div>
+
+    <!-- INDICADOR DE ECONOMÍA -->
+    <div class="col-md-6">
+      <div class="p-3 bg-white border rounded shadow-sm h-100">
+        <p class="text-muted small mb-1">
+          {{ resultadosIndicadoresVentas.economia?.tipo }}
+        </p>
+
+        <h6 class="fw-bold mb-2">
+          {{ resultadosIndicadoresVentas.economia?.nombre }}
+        </h6>
+
+        <p class="small text-muted mb-2">
+          {{ resultadosIndicadoresVentas.economia?.descripcion }}
+        </p>
+
+        <p class="small text-muted mb-2">
+          <strong>Fórmula:</strong>
+          {{ resultadosIndicadoresVentas.economia?.formula }}
+        </p>
+
+        <h5 class="fw-bold text-success mb-0">
+          S/ {{ (resultadosIndicadoresVentas.economia?.ingreso_total_ventas || 0) | number:'1.2-2' }}
+        </h5>
+      </div>
+    </div>
+
+    <!-- INDICADOR DE PROCESO -->
+    <div class="col-md-6">
+      <div class="p-3 bg-white border rounded shadow-sm h-100">
+        <p class="text-muted small mb-1">
+          {{ resultadosIndicadoresVentas.proceso?.tipo }}
+        </p>
+
+        <h6 class="fw-bold mb-2">
+          {{ resultadosIndicadoresVentas.proceso?.nombre }}
+        </h6>
+
+        <p class="small text-muted mb-2">
+          {{ resultadosIndicadoresVentas.proceso?.descripcion }}
+        </p>
+
+        <p class="small text-muted mb-0">
+          <strong>Fórmula:</strong>
+          {{ resultadosIndicadoresVentas.proceso?.formula }}
+        </p>
+      </div>
+    </div>
+
+    <!-- INDICADOR DE PRODUCTO -->
+    <div class="col-md-6">
+      <div class="p-3 bg-white border rounded shadow-sm h-100">
+        <p class="text-muted small mb-1">
+          {{ resultadosIndicadoresVentas.producto?.tipo }}
+        </p>
+
+        <h6 class="fw-bold mb-2">
+          {{ resultadosIndicadoresVentas.producto?.nombre }}
+        </h6>
+
+        <p class="small text-muted mb-2">
+          {{ resultadosIndicadoresVentas.producto?.descripcion }}
+        </p>
+
+        <p class="small mb-1">
+          <strong>Cantidad de ventas mensuales:</strong>
+          {{ resultadosIndicadoresVentas.producto?.cantidad_ventas_mensuales }}
+        </p>
+
+        <p class="small text-muted mb-0">
+          <strong>Fórmula:</strong>
+          {{ resultadosIndicadoresVentas.producto?.formula }}
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABLA: VENTAS POR VENDEDOR -->
+  <h6 class="px-4 fw-bold text-dark mt-4 mb-3">
+    CANTIDAD DE VENTAS REGISTRADAS POR VENDEDOR
+  </h6>
+
+  <div class="table-responsive mb-4">
+    <table class="table table-hover align-middle mb-0">
+      <thead style="background-color: #f8fafc;">
+        <tr>
+          <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Vendedor</th>
+          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de Ventas</th>
+          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total Vendido</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let v of resultadosIndicadoresVentas.proceso?.detalle">
+          <td class="py-3 px-4 fw-medium text-dark">{{ v.vendedor }}</td>
+          <td class="py-3 px-4 text-center">{{ v.cantidad_ventas }}</td>
+          <td class="py-3 px-4 text-end fw-bold">
+            S/ {{ (v.total_vendido || 0) | number:'1.2-2' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TABLA: VENTAS MENSUALES -->
+  <h6 class="px-4 fw-bold text-dark mt-4 mb-3">
+    CANTIDAD DE VENTAS MENSUALES
+  </h6>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead style="background-color: #f8fafc;">
+        <tr>
+          <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Mes</th>
+          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de Ventas</th>
+          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total Vendido</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let mes of resultadosIndicadoresVentas.producto?.detalle_mensual">
+          <td class="py-3 px-4 fw-medium text-dark">{{ mes.mes }}</td>
+          <td class="py-3 px-4 text-center">{{ mes.cantidad_ventas }}</td>
+          <td class="py-3 px-4 text-end fw-bold">
+            S/ {{ (mes.total_vendido || 0) | number:'1.2-2' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
 </div>

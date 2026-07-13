@@ -671,40 +671,115 @@ export class Reportes implements OnInit {
         });
 
       } else if (this.reporteSeleccionado === 'indicadoresVentas' && this.resultadosIndicadoresVentas) {
-        const ind = this.resultadosIndicadoresVentas;
+  const ind = this.resultadosIndicadoresVentas;
 
-        seccion('INDICADORES DE VENTAS');
+  seccion('INDICADORES DE VENTAS');
 
-        autoTable(doc, {
-          startY: Y,
-          head: [['INDICADOR', 'VALOR']],
-          body: [
-            ['Total de ventas', `${ind.total_ventas || 0} ventas`],
-            ['Ingresos totales', `S/ ${this.formatearMonto(ind.ingresos_totales || 0)}`],
-            ['Promedio de venta', `S/ ${this.formatearMonto(ind.promedio_venta || 0)}`],
-            ['Venta mayor', `S/ ${this.formatearMonto(ind.venta_mayor || 0)}`],
-            ['Venta menor', `S/ ${this.formatearMonto(ind.venta_menor || 0)}`],
-            ['Unidades vendidas', `${ind.unidades_vendidas || 0} unidades`],
-            [
-              'Producto más vendido',
-              `${ind.producto_mas_vendido || 'Sin datos'} (${ind.cantidad_producto_mas_vendido || 0})`,
-            ],
-            [
-              'Método de pago más usado',
-              `${ind.metodo_pago_mas_usado || 'Sin datos'} (${ind.cantidad_metodo_pago || 0})`,
-            ],
-          ],
-          theme: 'grid',
-          styles: { lineColor, lineWidth: 0.1 },
-          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-          bodyStyles: { fontSize: 8, textColor: bodyText },
-          columnStyles: {
-            1: { halign: 'right', fontStyle: 'bold' },
-          },
-          margin: { left: M, right: M, bottom: 14 },
-          didDrawPage: onNuevaPagina,
-        });
-      }
+  const totalVentasVendedor = (ind.proceso?.detalle || []).reduce(
+    (acc: number, item: any) => acc + Number(item.cantidad_ventas || 0),
+    0
+  );
+
+  autoTable(doc, {
+    startY: Y,
+    head: [['TIPO DE INDICADOR', 'INDICADOR', 'RESULTADO']],
+    body: [
+      [
+        ind.eficacia?.tipo || 'Indicador de Eficacia',
+        ind.eficacia?.nombre || 'Nivel de ventas completadas',
+        `${ind.eficacia?.ventas_finalizadas || 0} ventas finalizadas de ${ind.eficacia?.total_solicitudes_clientes || 0} solicitudes = ${ind.eficacia?.nivel_ventas_completadas_porcentaje || 0}%`
+      ],
+      [
+        ind.economia?.tipo || 'Indicador de Economía',
+        ind.economia?.nombre || 'Ingreso total por ventas',
+        `S/ ${this.formatearMonto(ind.economia?.ingreso_total_ventas || 0)}`
+      ],
+      [
+        ind.proceso?.tipo || 'Indicador de Proceso',
+        ind.proceso?.nombre || 'Cantidad de ventas registradas por vendedor',
+        `${totalVentasVendedor} ventas registradas`
+      ],
+      [
+        ind.producto?.tipo || 'Indicador de Producto',
+        ind.producto?.nombre || 'Cantidad de ventas mensuales',
+        `${ind.producto?.cantidad_ventas_mensuales || 0} ventas mensuales`
+      ],
+    ],
+    theme: 'grid',
+    styles: { lineColor, lineWidth: 0.1 },
+    headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+    bodyStyles: { fontSize: 8, textColor: bodyText },
+    columnStyles: {
+      0: { cellWidth: 45, fontStyle: 'bold' },
+      1: { cellWidth: 65 },
+      2: { halign: 'right', fontStyle: 'bold' },
+    },
+    margin: { left: M, right: M, bottom: 14 },
+    didDrawPage: onNuevaPagina,
+  });
+
+  Y = (doc as any).lastAutoTable.finalY + 6;
+
+  
+
+  seccion('CANTIDAD DE VENTAS REGISTRADAS POR VENDEDOR');
+
+  const vendedorBody = (ind.proceso?.detalle || []).map((v: any) => [
+    v.vendedor || '-',
+    `${v.cantidad_ventas || 0}`,
+    `S/ ${this.formatearMonto(v.total_vendido || 0)}`
+  ]);
+
+  if (!vendedorBody.length) {
+    vendedorBody.push(['Sin datos', '0', 'S/ 0.00']);
+  }
+
+  autoTable(doc, {
+    startY: Y,
+    head: [['VENDEDOR', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
+    body: vendedorBody,
+    theme: 'grid',
+    styles: { lineColor, lineWidth: 0.1 },
+    headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+    bodyStyles: { fontSize: 8, textColor: bodyText },
+    columnStyles: {
+      1: { halign: 'center' },
+      2: { halign: 'right', fontStyle: 'bold' },
+    },
+    margin: { left: M, right: M, bottom: 14 },
+    didDrawPage: onNuevaPagina,
+  });
+
+  Y = (doc as any).lastAutoTable.finalY + 6;
+
+  seccion('CANTIDAD DE VENTAS MENSUALES');
+
+  const mensualBody = (ind.producto?.detalle_mensual || []).map((m: any) => [
+    m.mes || '-',
+    `${m.cantidad_ventas || 0}`,
+    `S/ ${this.formatearMonto(m.total_vendido || 0)}`
+  ]);
+
+  if (!mensualBody.length) {
+    mensualBody.push(['Sin datos', '0', 'S/ 0.00']);
+  }
+
+  autoTable(doc, {
+    startY: Y,
+    head: [['MES', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
+    body: mensualBody,
+    theme: 'grid',
+    styles: { lineColor, lineWidth: 0.1 },
+    headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+    bodyStyles: { fontSize: 8, textColor: bodyText },
+    columnStyles: {
+      1: { halign: 'center' },
+      2: { halign: 'right', fontStyle: 'bold' },
+    },
+    margin: { left: M, right: M, bottom: 14 },
+    didDrawPage: onNuevaPagina,
+  });
+}
 
       let fY = (doc as any).lastAutoTable?.finalY ?? Y;
       fY += 10;

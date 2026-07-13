@@ -18,8 +18,8 @@ const puerto = 3000;
 
 const db = mysql.createConnection({
   host: "localhost",
-  user: "root",
-  password: "12345",
+  user: "tech_user",
+  password: "123456",
   database: "db_tech_peru",
   port: 3306
 });
@@ -1228,97 +1228,160 @@ app.get("/reportes/ventas-por-fechas", (req, res) => {
 });
 
 
-// 4. Reporte de Indicadores de Ventas
+// 4. Reporte de Indicadores de Ventas según el Word
 app.get("/reportes/indicadores-ventas", (req, res) => {
   const { fecha_inicio, fecha_fin } = req.query;
 
-  let condicion = "WHERE v.estado != 'Cancelada'";
+  let condicionGeneral = "WHERE 1 = 1";
+  let condicionCompletadas = "WHERE v.estado = 'Completado'";
   let parametros = [];
 
   if (fecha_inicio && fecha_fin) {
-    condicion += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
+    condicionGeneral += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
+    condicionCompletadas += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
     parametros = [fecha_inicio, fecha_fin];
   }
 
-  const queryIndicadores = `
+  // INDICADOR DE EFICACIA
+  // Nivel de ventas completadas % =
+  // Nro. de ventas finalizadas / Nro. total de solicitudes de clientes * 100
+  // En este sistema se toma cada venta registrada como una solicitud del cliente.
+  const queryEficacia = `
     SELECT
-      COUNT(v.id_venta) AS total_ventas,
-      IFNULL(SUM(v.total), 0) AS ingresos_totales,
-      IFNULL(AVG(v.total), 0) AS promedio_venta,
-      IFNULL(MAX(v.total), 0) AS venta_mayor,
-      IFNULL(MIN(v.total), 0) AS venta_menor
+      COUNT(v.id_venta) AS total_solicitudes_clientes,
+      SUM(CASE WHEN v.estado = 'Completado' THEN 1 ELSE 0 END) AS ventas_finalizadas
     FROM venta v
-    ${condicion};
+    ${condicionGeneral};
   `;
 
-  const queryUnidades = `
+  // INDICADOR DE ECONOMÍA
+  // Ingreso Total por Ventas =
+  // Σ(Precio unitario del teclado * Cantidad vendida)
+  const queryEconomia = `
     SELECT
-      IFNULL(SUM(dv.cantidad), 0) AS unidades_vendidas
-    FROM venta v
-    INNER JOIN detalleventa dv
-      ON v.id_venta = dv.id_venta
-    ${condicion};
-  `;
-
-  const queryProductoMasVendido = `
-    SELECT
-      p.nombre AS producto,
-      IFNULL(SUM(dv.cantidad), 0) AS cantidad_vendida
+      IFNULL(SUM(dv.precio_unitario * dv.cantidad), 0) AS ingreso_total_ventas
     FROM venta v
     INNER JOIN detalleventa dv
       ON v.id_venta = dv.id_venta
-    INNER JOIN producto p
-      ON dv.id_producto = p.id_producto
-    ${condicion}
-    GROUP BY p.id_producto, p.nombre
-    ORDER BY cantidad_vendida DESC
-    LIMIT 1;
+    ${condicionCompletadas};
   `;
 
-  const queryMetodoPago = `
+  // INDICADOR DE PROCESO
+  // Ventas por vendedor =
+  // Σ Ventas registradas por el vendedor X en el mes
+  const queryProceso = `
     SELECT
-      pa.metodo_pago,
-      COUNT(pa.id_pago) AS cantidad
+      u.nombre AS vendedor,
+      COUNT(v.id_venta) AS cantidad_ventas,
+      IFNULL(SUM(v.total), 0) AS total_vendido
     FROM venta v
-    INNER JOIN pago pa
-      ON v.id_venta = pa.id_venta
-    ${condicion}
-    GROUP BY pa.metodo_pago
-    ORDER BY cantidad DESC
-    LIMIT 1;
+    INNER JOIN vendedor ve
+      ON v.id_vendedor = ve.id_vendedor
+    INNER JOIN usuario u
+      ON ve.id_usuario = u.id_usuario
+    ${condicionCompletadas}
+    GROUP BY u.nombre
+    ORDER BY cantidad_ventas DESC;
   `;
 
-  db.query(queryIndicadores, parametros, (err1, indicadores) => {
+  // INDICADOR DE PRODUCTO
+  // Cantidad de ventas mensuales =
+  // Σ Número total de ventas registradas en el mes
+  const queryProducto = `
+    SELECT
+      DATE_FORMAT(v.fecha, '%Y-%m') AS mes,
+      COUNT(v.id_venta) AS cantidad_ventas,
+      IFNULL(SUM(v.total), 0) AS total_vendido
+    FROM venta v
+    ${condicionCompletadas}
+    GROUP BY DATE_FORMAT(v.fecha, '%Y-%m')
+    ORDER BY mes ASC;
+  `;
+
+  db.query(queryEficacia, parametros, (err1, eficaciaResult) => {
     if (err1) {
-      return res.status(500).json({ error: `Error al obtener indicadores: ${err1}` });
+      return res.status(500).json({
+        error: `Error al obtener indicador de eficacia: ${err1}`
+      });
     }
 
-    db.query(queryUnidades, parametros, (err2, unidades) => {
+    db.query(queryEconomia, parametros, (err2, economiaResult) => {
       if (err2) {
-        return res.status(500).json({ error: `Error al obtener unidades vendidas: ${err2}` });
+        return res.status(500).json({
+          error: `Error al obtener indicador de economía: ${err2}`
+        });
       }
 
-      db.query(queryProductoMasVendido, parametros, (err3, productoMasVendido) => {
+      db.query(queryProceso, parametros, (err3, procesoResult) => {
         if (err3) {
-          return res.status(500).json({ error: `Error al obtener producto más vendido: ${err3}` });
+          return res.status(500).json({
+            error: `Error al obtener indicador de proceso: ${err3}`
+          });
         }
 
-        db.query(queryMetodoPago, parametros, (err4, metodoPago) => {
+        db.query(queryProducto, parametros, (err4, productoResult) => {
           if (err4) {
-            return res.status(500).json({ error: `Error al obtener método de pago: ${err4}` });
+            return res.status(500).json({
+              error: `Error al obtener indicador de producto: ${err4}`
+            });
           }
 
+          const totalSolicitudes = eficaciaResult[0]?.total_solicitudes_clientes || 0;
+          const ventasFinalizadas = eficaciaResult[0]?.ventas_finalizadas || 0;
+
+          const nivelVentasCompletadas =
+            totalSolicitudes > 0
+              ? ((ventasFinalizadas / totalSolicitudes) * 100).toFixed(2)
+              : "0.00";
+
+          const totalVentasMensuales = productoResult.reduce(
+            (acc, item) => acc + Number(item.cantidad_ventas || 0),
+            0
+          );
+
           res.json({
-            total_ventas: indicadores[0]?.total_ventas || 0,
-            ingresos_totales: indicadores[0]?.ingresos_totales || 0,
-            promedio_venta: indicadores[0]?.promedio_venta || 0,
-            venta_mayor: indicadores[0]?.venta_mayor || 0,
-            venta_menor: indicadores[0]?.venta_menor || 0,
-            unidades_vendidas: unidades[0]?.unidades_vendidas || 0,
-            producto_mas_vendido: productoMasVendido[0]?.producto || 'Sin datos',
-            cantidad_producto_mas_vendido: productoMasVendido[0]?.cantidad_vendida || 0,
-            metodo_pago_mas_usado: metodoPago[0]?.metodo_pago || 'Sin datos',
-            cantidad_metodo_pago: metodoPago[0]?.cantidad || 0
+            eficacia: {
+              tipo: "Indicador de Eficacia",
+              nombre: "Nivel de ventas completadas",
+              descripcion:
+                "Mide el porcentaje de solicitudes de clientes que se concretan exitosamente en ventas realizadas durante el mes.",
+              formula:
+                "Nivel de Ventas Completadas % = (Nro. de ventas finalizadas / Nro. total de solicitudes de clientes) * 100",
+              ventas_finalizadas: ventasFinalizadas,
+              total_solicitudes_clientes: totalSolicitudes,
+              nivel_ventas_completadas_porcentaje: nivelVentasCompletadas
+            },
+
+            economia: {
+              tipo: "Indicador de Economía",
+              nombre: "Ingreso total por ventas",
+              descripcion:
+                "Mide el monto monetario total generado por las ventas de teclados realizadas durante un período mensual.",
+              formula:
+                "Ingreso Total por Ventas = Σ(Precio unitario del teclado * Cantidad vendida)",
+              ingreso_total_ventas: economiaResult[0]?.ingreso_total_ventas || 0
+            },
+
+            proceso: {
+              tipo: "Indicador de Proceso",
+              nombre: "Cantidad de ventas registradas por vendedor",
+              descripcion:
+                "Mide el número de ventas que cada vendedor registró en el sistema durante el mes.",
+              formula:
+                "Ventas por vendedor = Σ Ventas registradas por el vendedor X en el mes",
+              detalle: procesoResult
+            },
+
+            producto: {
+              tipo: "Indicador de Producto",
+              nombre: "Cantidad de ventas mensuales",
+              descripcion:
+                "Mide la cantidad total de ventas de teclados registradas exitosamente en el sistema durante un período mensual.",
+              formula:
+                "Cantidad de ventas mensuales = Σ Número total de ventas registradas en el mes",
+              cantidad_ventas_mensuales: totalVentasMensuales,
+              detalle_mensual: productoResult
+            }
           });
         });
       });
