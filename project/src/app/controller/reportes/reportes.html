@@ -82,7 +82,7 @@
       </div>
     </div>
 
-    <!-- Reporte 3: Eliminaciones -->
+    <!-- Reporte 3: Ventas Canceladas -->
     <div class="col-md-4">
       <div class="card h-100 border-0"
            style="border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); cursor: pointer; transition: all 0.2s;"
@@ -137,12 +137,10 @@
             </svg>
           </div>
           <h6 class="fw-bold mb-2">Indicadores de Ventas</h6>
-          <p class="small text-muted mb-0">Muestra indicadores comerciales como total, promedio, producto y método más usado.</p>
+          <p class="small text-muted mb-0">Muestra indicadores de eficacia, economía, proceso y producto según el documento del proyecto.</p>
         </div>
       </div>
     </div>
-
-
 
   </div>
 
@@ -208,15 +206,19 @@
             <tbody>
               <tr>
                 <td class="py-3 px-4 fw-bold text-dark">
-                  Venta Máxima 
-                  <span *ngIf="resultadosAnalitico.resumen?.id_venta_maxima" class="badge bg-secondary ms-2">ID #{{resultadosAnalitico.resumen.id_venta_maxima}}</span>
+                  Venta Máxima
+                  <span *ngIf="resultadosAnalitico.resumen?.id_venta_maxima" class="badge bg-secondary ms-2">
+                    ID #{{ resultadosAnalitico.resumen.id_venta_maxima }}
+                  </span>
                 </td>
                 <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_maxima || 0) | number:'1.2-2' }}</td>
               </tr>
               <tr>
                 <td class="py-3 px-4 fw-bold text-dark">
-                  Venta Mínima 
-                  <span *ngIf="resultadosAnalitico.resumen?.id_venta_minima" class="badge bg-secondary ms-2">ID #{{resultadosAnalitico.resumen.id_venta_minima}}</span>
+                  Venta Mínima
+                  <span *ngIf="resultadosAnalitico.resumen?.id_venta_minima" class="badge bg-secondary ms-2">
+                    ID #{{ resultadosAnalitico.resumen.id_venta_minima }}
+                  </span>
                 </td>
                 <td class="py-3 px-4 text-end text-dark fw-medium">S/ {{ (resultadosAnalitico.resumen?.venta_minima || 0) | number:'1.2-2' }}</td>
               </tr>
@@ -282,6 +284,7 @@
               </table>
             </div>
           </div>
+
           <div *ngIf="!ventasAgrupadas.length" class="py-4 text-center text-muted">
             Sin ventas en el periodo seleccionado
           </div>
@@ -331,7 +334,7 @@
         </div>
       </div>
 
-      <!-- Tabla Reporte Eliminaciones -->
+      <!-- Tabla Reporte Ventas Canceladas -->
       <div class="table-responsive mb-4" *ngIf="!cargando && reporteSeleccionado === 'eliminaciones' && resultadosEliminaciones">
         <h6 class="px-4 fw-bold text-dark mt-4 mb-3">VENTAS CANCELADAS</h6>
         <table class="table table-hover align-middle mb-0">
@@ -359,221 +362,250 @@
         </table>
       </div>
 
-      <!-- NUEVO: Ventas por Fechas -->
+      <!-- Reporte: Ventas por Fechas -->
       <div *ngIf="!cargando && reporteSeleccionado === 'ventasFechas' && resultadosVentasPorFechas">
         <h6 class="px-4 fw-bold text-dark mt-4 mb-3">VENTAS POR FECHAS</h6>
 
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #f8fafc;">
-              <tr>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Cliente</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Vendedor</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Producto</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Pago</th>
-                <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total</th>
-              </tr>
-            </thead>
+        <div class="px-4 mb-4">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead style="background-color: #f8fafc;">
+                <tr>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">ID Venta</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Fecha</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Cliente</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Vendedor</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Producto</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Pago</th>
+                  <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr *ngFor="let v of resultadosVentasPorFechas">
-                <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
-                <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
-                <td class="py-3 px-4 fw-medium text-dark">{{ v.cliente }}</td>
-                <td class="py-3 px-4 text-muted">{{ v.vendedor }}</td>
-                <td class="py-3 px-4 text-muted">{{ v.producto }}</td>
-                <td class="py-3 px-4 text-center fw-medium">{{ v.cantidad }}</td>
-                <td class="py-3 px-4">
-                  <span class="badge bg-primary">{{ v.metodo_pago }}</span>
-                </td>
-                <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
-              </tr>
+              <tbody>
+                <tr *ngFor="let v of resultadosVentasPorFechas">
+                  <td class="py-3 px-4 text-muted">#{{ v.id_venta }}</td>
+                  <td class="py-3 px-4 text-muted">{{ v.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td class="py-3 px-4 fw-medium text-dark">{{ v.cliente }}</td>
+                  <td class="py-3 px-4 text-muted">{{ v.vendedor }}</td>
+                  <td class="py-3 px-4 text-muted">{{ v.producto }}</td>
+                  <td class="py-3 px-4 text-center fw-medium">{{ v.cantidad }}</td>
+                  <td class="py-3 px-4">
+                    <span class="badge bg-primary">{{ v.metodo_pago }}</span>
+                  </td>
+                  <td class="py-3 px-4 text-end fw-bold text-dark">S/ {{ v.total | number:'1.2-2' }}</td>
+                </tr>
 
-              <tr *ngIf="resultadosVentasPorFechas.length === 0">
-                <td colspan="8" class="py-4 text-center text-muted">
-                  No se encontraron ventas en el periodo seleccionado.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                <tr *ngIf="resultadosVentasPorFechas.length === 0">
+                  <td colspan="8" class="py-4 text-center text-muted">
+                    No se encontraron ventas en el periodo seleccionado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- NUEVO: Indicadores de Ventas SEGÚN WORD -->
-<div *ngIf="!cargando && reporteSeleccionado === 'indicadoresVentas' && resultadosIndicadoresVentas">
+      <!-- Reporte: Indicadores de Ventas con selector -->
+      <div *ngIf="!cargando && reporteSeleccionado === 'indicadoresVentas' && resultadosIndicadoresVentas">
 
-  <h6 class="px-4 fw-bold text-dark mt-4 mb-3">
-    INDICADORES DE VENTAS
-  </h6>
+        <div class="px-4 pt-4 pb-3">
+          <div class="p-4 bg-white border rounded shadow-sm">
 
-  <div class="row g-3 px-4 mb-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div style="width: 48px; height: 48px; background: #ede9fe; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M7 16l4-4 3 3 5-7"></path>
+                </svg>
+              </div>
 
-    <!-- INDICADOR DE EFICACIA -->
-    <div class="col-md-6">
-      <div class="p-3 bg-white border rounded shadow-sm h-100">
-        <p class="text-muted small mb-1">
-          {{ resultadosIndicadoresVentas.eficacia?.tipo }}
-        </p>
+              <div>
+                <h5 class="fw-bold mb-1">Reporte de Indicadores</h5>
+                <p class="text-muted mb-0 small">
+                  Selecciona el indicador que deseas revisar según el periodo elegido.
+                </p>
+              </div>
+            </div>
 
-        <h6 class="fw-bold mb-2">
-          {{ resultadosIndicadoresVentas.eficacia?.nombre }}
-        </h6>
+            <label class="fw-bold mb-2">Indicador</label>
 
-        <p class="small text-muted mb-2">
-          {{ resultadosIndicadoresVentas.eficacia?.descripcion }}
-        </p>
+            <select class="form-select" [(ngModel)]="indicadorSeleccionado">
+              <option value="eficacia">Nivel de ventas completadas</option>
+              <option value="economia">Ingreso total por ventas</option>
+              <option value="proceso">Cantidad de ventas registradas por vendedor</option>
+              <option value="producto">Cantidad de ventas mensuales</option>
+            </select>
 
-        <p class="small mb-1">
-          <strong>Ventas finalizadas:</strong>
-          {{ resultadosIndicadoresVentas.eficacia?.ventas_finalizadas }}
-        </p>
+          </div>
+        </div>
 
-        <p class="small mb-1">
-          <strong>Total solicitudes de clientes:</strong>
-          {{ resultadosIndicadoresVentas.eficacia?.total_solicitudes_clientes }}
-        </p>
+        <div class="px-4 pb-4" [ngSwitch]="indicadorSeleccionado">
 
-        <p class="small text-muted mb-2">
-          <strong>Fórmula:</strong>
-          {{ resultadosIndicadoresVentas.eficacia?.formula }}
-        </p>
+          <!-- Indicador de Eficacia -->
+          <div *ngSwitchCase="'eficacia'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Nivel de ventas completadas</h5>
 
-        <h5 class="fw-bold text-primary mb-0">
-          {{ resultadosIndicadoresVentas.eficacia?.nivel_ventas_completadas_porcentaje }}%
-        </h5>
+            <p class="text-muted">
+              Mide el porcentaje de solicitudes de clientes que se concretan exitosamente en ventas realizadas durante el periodo seleccionado.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Métrica</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Dato / Valor</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr>
+                    <td class="py-3 px-4">Ventas finalizadas</td>
+                    <td class="py-3 px-4 text-end fw-bold">
+                      {{ resultadosIndicadoresVentas.eficacia?.ventas_finalizadas }}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="py-3 px-4">Total de solicitudes de clientes</td>
+                    <td class="py-3 px-4 text-end fw-bold">
+                      {{ resultadosIndicadoresVentas.eficacia?.total_solicitudes_clientes }}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td class="py-3 px-4">Nivel de ventas completadas</td>
+                    <td class="py-3 px-4 text-end fw-bold text-primary">
+                      {{ resultadosIndicadoresVentas.eficacia?.nivel_ventas_completadas_porcentaje }}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              Durante el periodo seleccionado se finalizaron
+              <strong>{{ resultadosIndicadoresVentas.eficacia?.ventas_finalizadas }}</strong>
+              ventas de un total de
+              <strong>{{ resultadosIndicadoresVentas.eficacia?.total_solicitudes_clientes }}</strong>
+              solicitudes registradas.
+            </p>
+          </div>
+
+          <!-- Indicador de Economía -->
+          <div *ngSwitchCase="'economia'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Ingreso total por ventas</h5>
+
+            <p class="text-muted">
+              Mide el monto monetario total generado por las ventas de teclados realizadas durante el periodo seleccionado.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Métrica</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Dato / Valor</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr>
+                    <td class="py-3 px-4">Ingreso total por ventas</td>
+                    <td class="py-3 px-4 text-end fw-bold text-success">
+                      S/ {{ (resultadosIndicadoresVentas.economia?.ingreso_total_ventas || 0) | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              El sistema registró un ingreso total de
+              <strong>
+                S/ {{ (resultadosIndicadoresVentas.economia?.ingreso_total_ventas || 0) | number:'1.2-2' }}
+              </strong>
+              por ventas realizadas en el periodo seleccionado.
+            </p>
+          </div>
+
+          <!-- Indicador de Proceso -->
+          <div *ngSwitchCase="'proceso'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Cantidad de ventas registradas por vendedor</h5>
+
+            <p class="text-muted">
+              Mide el número de ventas que cada vendedor registró en el sistema durante el periodo seleccionado.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Vendedor</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de ventas</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total vendido</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let v of resultadosIndicadoresVentas.proceso?.detalle">
+                    <td class="py-3 px-4 fw-medium text-dark">{{ v.vendedor }}</td>
+                    <td class="py-3 px-4 text-center fw-bold">{{ v.cantidad_ventas }}</td>
+                    <td class="py-3 px-4 text-end fw-bold">
+                      S/ {{ (v.total_vendido || 0) | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Indicador de Producto -->
+          <div *ngSwitchCase="'producto'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Cantidad de ventas mensuales</h5>
+
+            <p class="text-muted">
+              Mide la cantidad total de ventas de teclados registradas exitosamente en el sistema durante el periodo seleccionado.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Mes</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de ventas</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total vendido</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr *ngFor="let mes of resultadosIndicadoresVentas.producto?.detalle_mensual">
+                    <td class="py-3 px-4 fw-medium text-dark">{{ mes.mes }}</td>
+                    <td class="py-3 px-4 text-center fw-bold">{{ mes.cantidad_ventas }}</td>
+                    <td class="py-3 px-4 text-end fw-bold">
+                      S/ {{ (mes.total_vendido || 0) | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              Se registraron
+              <strong>{{ resultadosIndicadoresVentas.producto?.cantidad_ventas_mensuales }}</strong>
+              ventas en el periodo seleccionado.
+            </p>
+          </div>
+
+        </div>
       </div>
+
     </div>
-
-    <!-- INDICADOR DE ECONOMÍA -->
-    <div class="col-md-6">
-      <div class="p-3 bg-white border rounded shadow-sm h-100">
-        <p class="text-muted small mb-1">
-          {{ resultadosIndicadoresVentas.economia?.tipo }}
-        </p>
-
-        <h6 class="fw-bold mb-2">
-          {{ resultadosIndicadoresVentas.economia?.nombre }}
-        </h6>
-
-        <p class="small text-muted mb-2">
-          {{ resultadosIndicadoresVentas.economia?.descripcion }}
-        </p>
-
-        <p class="small text-muted mb-2">
-          <strong>Fórmula:</strong>
-          {{ resultadosIndicadoresVentas.economia?.formula }}
-        </p>
-
-        <h5 class="fw-bold text-success mb-0">
-          S/ {{ (resultadosIndicadoresVentas.economia?.ingreso_total_ventas || 0) | number:'1.2-2' }}
-        </h5>
-      </div>
-    </div>
-
-    <!-- INDICADOR DE PROCESO -->
-    <div class="col-md-6">
-      <div class="p-3 bg-white border rounded shadow-sm h-100">
-        <p class="text-muted small mb-1">
-          {{ resultadosIndicadoresVentas.proceso?.tipo }}
-        </p>
-
-        <h6 class="fw-bold mb-2">
-          {{ resultadosIndicadoresVentas.proceso?.nombre }}
-        </h6>
-
-        <p class="small text-muted mb-2">
-          {{ resultadosIndicadoresVentas.proceso?.descripcion }}
-        </p>
-
-        <p class="small text-muted mb-0">
-          <strong>Fórmula:</strong>
-          {{ resultadosIndicadoresVentas.proceso?.formula }}
-        </p>
-      </div>
-    </div>
-
-    <!-- INDICADOR DE PRODUCTO -->
-    <div class="col-md-6">
-      <div class="p-3 bg-white border rounded shadow-sm h-100">
-        <p class="text-muted small mb-1">
-          {{ resultadosIndicadoresVentas.producto?.tipo }}
-        </p>
-
-        <h6 class="fw-bold mb-2">
-          {{ resultadosIndicadoresVentas.producto?.nombre }}
-        </h6>
-
-        <p class="small text-muted mb-2">
-          {{ resultadosIndicadoresVentas.producto?.descripcion }}
-        </p>
-
-        <p class="small mb-1">
-          <strong>Cantidad de ventas mensuales:</strong>
-          {{ resultadosIndicadoresVentas.producto?.cantidad_ventas_mensuales }}
-        </p>
-
-        <p class="small text-muted mb-0">
-          <strong>Fórmula:</strong>
-          {{ resultadosIndicadoresVentas.producto?.formula }}
-        </p>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- TABLA: VENTAS POR VENDEDOR -->
-  <h6 class="px-4 fw-bold text-dark mt-4 mb-3">
-    CANTIDAD DE VENTAS REGISTRADAS POR VENDEDOR
-  </h6>
-
-  <div class="table-responsive mb-4">
-    <table class="table table-hover align-middle mb-0">
-      <thead style="background-color: #f8fafc;">
-        <tr>
-          <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Vendedor</th>
-          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de Ventas</th>
-          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total Vendido</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let v of resultadosIndicadoresVentas.proceso?.detalle">
-          <td class="py-3 px-4 fw-medium text-dark">{{ v.vendedor }}</td>
-          <td class="py-3 px-4 text-center">{{ v.cantidad_ventas }}</td>
-          <td class="py-3 px-4 text-end fw-bold">
-            S/ {{ (v.total_vendido || 0) | number:'1.2-2' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- TABLA: VENTAS MENSUALES -->
-  <h6 class="px-4 fw-bold text-dark mt-4 mb-3">
-    CANTIDAD DE VENTAS MENSUALES
-  </h6>
-
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead style="background-color: #f8fafc;">
-        <tr>
-          <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Mes</th>
-          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de Ventas</th>
-          <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total Vendido</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let mes of resultadosIndicadoresVentas.producto?.detalle_mensual">
-          <td class="py-3 px-4 fw-medium text-dark">{{ mes.mes }}</td>
-          <td class="py-3 px-4 text-center">{{ mes.cantidad_ventas }}</td>
-          <td class="py-3 px-4 text-end fw-bold">
-            S/ {{ (mes.total_vendido || 0) | number:'1.2-2' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 
 </div>

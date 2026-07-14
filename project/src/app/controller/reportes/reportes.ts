@@ -11,8 +11,9 @@ type TipoReporte =
   | 'ingresos'
   | 'eliminaciones'
   | 'ventasFechas'
-  | 'indicadoresVentas'
-  | 'ventasInventario';
+  | 'indicadoresVentas';
+
+type TipoIndicador = 'eficacia' | 'economia' | 'proceso' | 'producto';
 
 @Component({
   selector: 'app-reportes',
@@ -32,17 +33,14 @@ export class Reportes implements OnInit {
 
   resultadosAnalitico: any = null;
   resultadosEliminaciones: any[] | null = null;
-
-  // NUEVO: reportes separados para tu parte
   resultadosVentasPorFechas: any[] | null = null;
   resultadosIndicadoresVentas: any = null;
 
-  // Compatibilidad temporal por si tu HTML aún tiene la tarjeta antigua de ventasInventario
-  resultadosVentasInventario: any = null;
+  indicadorSeleccionado: TipoIndicador = 'eficacia';
 
   cargando: boolean = false;
   esPeriodoLargo: boolean = false;
-  ventasAgrupadas: { mes: string, ventas: any[] }[] = [];
+  ventasAgrupadas: { mes: string; ventas: any[] }[] = [];
   mensaje: string = '';
 
   constructor(
@@ -67,14 +65,11 @@ export class Reportes implements OnInit {
 
   seleccionarReporte(tipo: TipoReporte): void {
     this.reporteSeleccionado = tipo;
+    this.limpiarResultados();
 
-    this.resultadosAnalitico = null;
-    this.resultadosEliminaciones = null;
-    this.resultadosVentasPorFechas = null;
-    this.resultadosIndicadoresVentas = null;
-    this.resultadosVentasInventario = null;
-
-    this.mensaje = '';
+    if (tipo === 'indicadoresVentas') {
+      this.indicadorSeleccionado = this.indicadorSeleccionado || 'eficacia';
+    }
 
     if (this.fechaInicio && this.fechaFin) {
       if (new Date(this.fechaInicio) > new Date(this.fechaFin)) {
@@ -104,7 +99,7 @@ export class Reportes implements OnInit {
     this.resultadosEliminaciones = null;
     this.resultadosVentasPorFechas = null;
     this.resultadosIndicadoresVentas = null;
-    this.resultadosVentasInventario = null;
+    this.ventasAgrupadas = [];
     this.mensaje = '';
   }
 
@@ -153,112 +148,210 @@ export class Reportes implements OnInit {
     this.ejecutarConsulta();
   }
 
-  agruparPorMes(ventas: any[]): { mes: string, ventas: any[] }[] {
-    if (!ventas) return [];
+  agruparPorMes(ventas: any[]): { mes: string; ventas: any[] }[] {
+    if (!ventas) {
+      return [];
+    }
+
     const grupos: { [key: string]: any[] } = {};
-    ventas.forEach(v => {
+
+    ventas.forEach((v) => {
       const fecha = new Date(v.fecha);
-      const mesNombre = fecha.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' });
+      const mesNombre = fecha.toLocaleDateString('es-PE', {
+        month: 'long',
+        year: 'numeric',
+      });
       const mesClave = mesNombre.charAt(0).toUpperCase() + mesNombre.slice(1);
-      
-      if (!grupos[mesClave]) grupos[mesClave] = [];
+
+      if (!grupos[mesClave]) {
+        grupos[mesClave] = [];
+      }
+
       grupos[mesClave].push(v);
     });
-    return Object.keys(grupos).map(k => ({ mes: k, ventas: grupos[k] }));
+
+    return Object.keys(grupos).map((k) => ({
+      mes: k,
+      ventas: grupos[k],
+    }));
   }
 
-  ejecutarConsulta(): void {
+  evaluarPeriodoLargo(): void {
     if (this.fechaInicio && this.fechaFin) {
-      const diffTime = Math.abs(new Date(this.fechaFin).getTime() - new Date(this.fechaInicio).getTime());
+      const diffTime = Math.abs(
+        new Date(this.fechaFin).getTime() - new Date(this.fechaInicio).getTime()
+      );
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       this.esPeriodoLargo = diffDays > 31;
     } else {
       this.esPeriodoLargo = false;
     }
+  }
+
+  ejecutarConsulta(): void {
+    this.evaluarPeriodoLargo();
 
     this.cargando = true;
     this.mensaje = '';
 
     if (
       this.reporteSeleccionado === 'estadisticas' ||
-    this.reporteSeleccionado === 'ingresos'
-  ) {
-    this.reportesService.obtenerAnaliticoVentas(this.fechaInicio, this.fechaFin).subscribe({
-      next: (data) => {
-        this.resultadosAnalitico = data;
-        if (this.esPeriodoLargo && data.todasVentas) {
-          this.ventasAgrupadas = this.agruparPorMes(data.todasVentas);
-        } else {
-          this.ventasAgrupadas = [];
-        }
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.mensaje = err.error?.error || 'Error al obtener la información de ventas.';
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-    });
+      this.reporteSeleccionado === 'ingresos'
+    ) {
+      this.reportesService.obtenerAnaliticoVentas(this.fechaInicio, this.fechaFin).subscribe({
+        next: (data) => {
+          this.resultadosAnalitico = data;
 
-  } else if (this.reporteSeleccionado === 'eliminaciones') {
-    this.reportesService.obtenerEliminaciones(this.fechaInicio, this.fechaFin).subscribe({
-      next: (data) => {
-        this.resultadosEliminaciones = data;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.mensaje = err.error?.error || 'Error al obtener el registro de ventas canceladas.';
-        this.resultadosEliminaciones = [];
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-    });
+          if (this.esPeriodoLargo && data?.todasVentas) {
+            this.ventasAgrupadas = this.agruparPorMes(data.todasVentas);
+          } else {
+            this.ventasAgrupadas = [];
+          }
 
-  } else if (this.reporteSeleccionado === 'ventasFechas') {
-    this.reportesService.obtenerVentasPorFechas(this.fechaInicio, this.fechaFin).subscribe({
-      next: (data) => {
-        console.log('Ventas por fechas:', data);
-        this.resultadosVentasPorFechas = data;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error ventas por fechas:', err);
-        this.mensaje = err.error?.error || 'Error al obtener el reporte de ventas por fechas.';
-        this.resultadosVentasPorFechas = [];
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-    });
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al obtener la información de ventas.';
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+      });
 
-  } else if (this.reporteSeleccionado === 'indicadoresVentas') {
-    this.reportesService.obtenerIndicadoresVentas(this.fechaInicio, this.fechaFin).subscribe({
-      next: (data) => {
-        console.log('Indicadores de ventas:', data);
-        this.resultadosIndicadoresVentas = data;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error indicadores ventas:', err);
-        this.mensaje = err.error?.error || 'Error al obtener los indicadores de ventas.';
-        this.resultadosIndicadoresVentas = null;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-    });
+    } else if (this.reporteSeleccionado === 'eliminaciones') {
+      this.reportesService.obtenerEliminaciones(this.fechaInicio, this.fechaFin).subscribe({
+        next: (data) => {
+          this.resultadosEliminaciones = data;
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al obtener el registro de ventas canceladas.';
+          this.resultadosEliminaciones = [];
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+      });
 
-  } else {
-    this.mensaje = 'No se reconoció el tipo de reporte seleccionado.';
-    this.cargando = false;
-    this.cdr.detectChanges();
+    } else if (this.reporteSeleccionado === 'ventasFechas') {
+      this.reportesService.obtenerVentasPorFechas(this.fechaInicio, this.fechaFin).subscribe({
+        next: (data) => {
+          this.resultadosVentasPorFechas = data;
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al obtener el reporte de ventas por fechas.';
+          this.resultadosVentasPorFechas = [];
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+      });
+
+    } else if (this.reporteSeleccionado === 'indicadoresVentas') {
+      this.reportesService.obtenerIndicadoresVentas(this.fechaInicio, this.fechaFin).subscribe({
+        next: (data) => {
+          this.resultadosIndicadoresVentas = data;
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.mensaje = err.error?.error || 'Error al obtener los indicadores de ventas.';
+          this.resultadosIndicadoresVentas = null;
+          this.cargando = false;
+          this.cdr.detectChanges();
+        },
+      });
+
+    } else {
+      this.mensaje = 'No se reconoció el tipo de reporte seleccionado.';
+      this.cargando = false;
+      this.cdr.detectChanges();
+    }
   }
-}
 
   formatearMonto(valor: any): string {
     return (parseFloat(valor) || 0).toFixed(2);
+  }
+
+  obtenerResumenVentasPorFechas(): any {
+    const ventas = this.resultadosVentasPorFechas || [];
+
+    const totalVentas = ventas.length;
+
+    const ventasCompletadas = ventas.filter((v: any) => {
+      return !v.estado || v.estado === 'Completado';
+    }).length;
+
+    const productosVendidos = ventas.reduce((acc: number, v: any) => {
+      return acc + Number(v.cantidad || 0);
+    }, 0);
+
+    const descuentoTotal = ventas.reduce((acc: number, v: any) => {
+      return acc + Number(v.descuento || 0);
+    }, 0);
+
+    const ingresoTotal = ventas.reduce((acc: number, v: any) => {
+      return acc + Number(v.total || 0);
+    }, 0);
+
+    return {
+      totalVentas,
+      ventasCompletadas,
+      productosVendidos,
+      descuentoTotal,
+      ingresoTotal,
+    };
+  }
+
+  obtenerTituloIndicadorPDF(): string {
+    switch (this.indicadorSeleccionado) {
+      case 'eficacia':
+        return 'REPORTE DE NIVEL DE VENTAS COMPLETADAS';
+      case 'economia':
+        return 'REPORTE DE INGRESO TOTAL POR VENTAS';
+      case 'proceso':
+        return 'REPORTE DE VENTAS REGISTRADAS POR VENDEDOR';
+      case 'producto':
+        return 'REPORTE DE CANTIDAD DE VENTAS MENSUALES';
+      default:
+        return 'REPORTE DE INDICADORES DE VENTAS';
+    }
+  }
+
+  obtenerFormulaIndicadorSeleccionado(): string {
+    if (!this.resultadosIndicadoresVentas) {
+      return '-';
+    }
+
+    switch (this.indicadorSeleccionado) {
+      case 'eficacia':
+        return (
+          this.resultadosIndicadoresVentas.eficacia?.formula ||
+          'Nivel de Ventas Completadas % = (Nro. de ventas finalizadas / Nro. total de solicitudes de clientes) * 100'
+        );
+
+      case 'economia':
+        return (
+          this.resultadosIndicadoresVentas.economia?.formula ||
+          'Ingreso Total por Ventas = Σ(Precio unitario del teclado * Cantidad vendida)'
+        );
+
+      case 'proceso':
+        return (
+          this.resultadosIndicadoresVentas.proceso?.formula ||
+          'Ventas por vendedor = Σ Ventas registradas por el vendedor X en el mes'
+        );
+
+      case 'producto':
+        return (
+          this.resultadosIndicadoresVentas.producto?.formula ||
+          'Cantidad de ventas mensuales = Σ Número total de ventas registradas en el mes'
+        );
+
+      default:
+        return '-';
+    }
   }
 
   async descargarPDF(): Promise<void> {
@@ -272,8 +365,7 @@ export class Reportes implements OnInit {
       (this.reporteSeleccionado === 'ingresos' && !this.resultadosAnalitico) ||
       (this.reporteSeleccionado === 'eliminaciones' && !this.resultadosEliminaciones) ||
       (this.reporteSeleccionado === 'ventasFechas' && !this.resultadosVentasPorFechas) ||
-      (this.reporteSeleccionado === 'indicadoresVentas' && !this.resultadosIndicadoresVentas) ||
-      (this.reporteSeleccionado === 'ventasInventario' && !this.resultadosVentasInventario)
+      (this.reporteSeleccionado === 'indicadoresVentas' && !this.resultadosIndicadoresVentas)
     ) {
       this.mensaje = 'Primero genera una previsualización con datos antes de descargar el PDF.';
       return;
@@ -303,16 +395,15 @@ export class Reportes implements OnInit {
 
       const nReporte = `REP-${Date.now().toString().slice(-6)}`;
 
-      const titulos: Record<string, string> = {
+      const titulos: Record<TipoReporte, string> = {
         estadisticas: 'REPORTE DE ESTADÍSTICA DE VENTAS',
         ingresos: 'REPORTE DE INGRESOS DIARIOS',
-        eliminaciones: 'HISTORIAL DE ELIMINACIONES',
+        eliminaciones: 'REPORTE DE VENTAS CANCELADAS',
         ventasFechas: 'REPORTE DE VENTAS POR FECHAS',
-        indicadoresVentas: 'REPORTE DE INDICADORES DE VENTAS',
-        ventasInventario: 'REPORTE DE VENTAS, INVENTARIO E INDICADORES',
+        indicadoresVentas: this.obtenerTituloIndicadorPDF(),
       };
 
-      const titulo = titulos[this.reporteSeleccionado] || 'REPORTE ADMINISTRATIVO';
+      const titulo = titulos[this.reporteSeleccionado as TipoReporte] || 'REPORTE ADMINISTRATIVO';
 
       const NEGRO: [number, number, number] = [20, 20, 20];
       const OSCURO: [number, number, number] = [60, 60, 60];
@@ -456,6 +547,32 @@ export class Reportes implements OnInit {
         }
       };
 
+      const agregarFormulaIndicador = (formula: string) => {
+        seccion('FÓRMULA DEL INDICADOR');
+
+        autoTable(doc, {
+          startY: Y,
+          head: [['FÓRMULA']],
+          body: [[formula]],
+          theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: {
+            fillColor: headColor,
+            textColor: headText,
+            fontStyle: 'bold',
+            fontSize: 8,
+          },
+          bodyStyles: {
+            fontSize: 8,
+            textColor: bodyText,
+          },
+          margin: { left: M, right: M, bottom: 14 },
+          didDrawPage: onNuevaPagina,
+        });
+
+        Y = (doc as any).lastAutoTable.finalY + 6;
+      };
+
       if (this.reporteSeleccionado === 'estadisticas' && this.resultadosAnalitico) {
         const r = this.resultadosAnalitico.resumen;
 
@@ -467,11 +584,11 @@ export class Reportes implements OnInit {
           body: [
             [
               r?.id_venta_maxima ? `Venta Máxima (ID: #${r.id_venta_maxima})` : 'Venta Máxima',
-              `S/ ${this.formatearMonto(r?.venta_maxima || 0)}`
+              `S/ ${this.formatearMonto(r?.venta_maxima || 0)}`,
             ],
             [
               r?.id_venta_minima ? `Venta Mínima (ID: #${r.id_venta_minima})` : 'Venta Mínima',
-              `S/ ${this.formatearMonto(r?.venta_minima || 0)}`
+              `S/ ${this.formatearMonto(r?.venta_minima || 0)}`,
             ],
             ['Venta Promedio', `S/ ${this.formatearMonto(r?.venta_promedio || 0)}`],
           ],
@@ -491,8 +608,9 @@ export class Reportes implements OnInit {
             if (idx > 0) {
               Y = (doc as any).lastAutoTable.finalY + 8;
             }
+
             seccion(`VENTAS DE ${grupo.mes.toUpperCase()}`);
-            
+
             const tbody = grupo.ventas.map((v: any, i: number) => [
               `${i + 1}°`,
               `#${v.id_venta}`,
@@ -515,6 +633,7 @@ export class Reportes implements OnInit {
           });
         } else {
           seccion('DETALLE DE TODAS LAS VENTAS');
+
           const todasBody = (this.resultadosAnalitico.todasVentas || []).map((v: any, i: number) => [
             `${i + 1}°`,
             `#${v.id_venta}`,
@@ -612,7 +731,15 @@ export class Reportes implements OnInit {
           `#${e.id_registro || 'N/A'}`,
           e.cliente || '-',
           `S/ ${this.formatearMonto(e.monto)}`,
-          e.fecha ? new Date(e.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+          e.fecha
+            ? new Date(e.fecha).toLocaleString('es-PE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '-',
         ]);
 
         if (!elBody.length) {
@@ -638,6 +765,35 @@ export class Reportes implements OnInit {
 
       } else if (this.reporteSeleccionado === 'ventasFechas' && this.resultadosVentasPorFechas) {
         seccion('VENTAS POR FECHAS');
+
+        const resumen = this.obtenerResumenVentasPorFechas();
+
+        seccion('RESUMEN DEL PERIODO');
+
+        autoTable(doc, {
+          startY: Y,
+          head: [['CONCEPTO', 'VALOR']],
+          body: [
+            ['Total de ventas', `${resumen.totalVentas}`],
+            ['Ventas completadas', `${resumen.ventasCompletadas}`],
+            ['Productos vendidos', `${resumen.productosVendidos}`],
+            ['Descuento total', `S/ ${this.formatearMonto(resumen.descuentoTotal)}`],
+            ['Ingreso total', `S/ ${this.formatearMonto(resumen.ingresoTotal)}`],
+          ],
+          theme: 'grid',
+          styles: { lineColor, lineWidth: 0.1 },
+          headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: bodyText },
+          columnStyles: {
+            1: { halign: 'right', fontStyle: 'bold' },
+          },
+          margin: { left: M, right: M, bottom: 14 },
+          didDrawPage: onNuevaPagina,
+        });
+
+        Y = (doc as any).lastAutoTable.finalY + 6;
+
+        seccion('DETALLE DE VENTAS');
 
         const ventasBody = (this.resultadosVentasPorFechas || []).map((v: any) => [
           `#${v.id_venta}`,
@@ -671,115 +827,181 @@ export class Reportes implements OnInit {
         });
 
       } else if (this.reporteSeleccionado === 'indicadoresVentas' && this.resultadosIndicadoresVentas) {
-  const ind = this.resultadosIndicadoresVentas;
+        const ind = this.resultadosIndicadoresVentas;
 
-  seccion('INDICADORES DE VENTAS');
+        if (this.indicadorSeleccionado === 'eficacia') {
+          seccion('NIVEL DE VENTAS COMPLETADAS');
 
-  const totalVentasVendedor = (ind.proceso?.detalle || []).reduce(
-    (acc: number, item: any) => acc + Number(item.cantidad_ventas || 0),
-    0
-  );
+          autoTable(doc, {
+            startY: Y,
+            head: [['MÉTRICA', 'DATO / VALOR']],
+            body: [
+              ['Ventas finalizadas', `${ind.eficacia?.ventas_finalizadas || 0}`],
+              ['Total de solicitudes de clientes', `${ind.eficacia?.total_solicitudes_clientes || 0}`],
+              ['Nivel de ventas completadas', `${ind.eficacia?.nivel_ventas_completadas_porcentaje || 0}%`],
+            ],
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'right', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
 
-  autoTable(doc, {
-    startY: Y,
-    head: [['TIPO DE INDICADOR', 'INDICADOR', 'RESULTADO']],
-    body: [
-      [
-        ind.eficacia?.tipo || 'Indicador de Eficacia',
-        ind.eficacia?.nombre || 'Nivel de ventas completadas',
-        `${ind.eficacia?.ventas_finalizadas || 0} ventas finalizadas de ${ind.eficacia?.total_solicitudes_clientes || 0} solicitudes = ${ind.eficacia?.nivel_ventas_completadas_porcentaje || 0}%`
-      ],
-      [
-        ind.economia?.tipo || 'Indicador de Economía',
-        ind.economia?.nombre || 'Ingreso total por ventas',
-        `S/ ${this.formatearMonto(ind.economia?.ingreso_total_ventas || 0)}`
-      ],
-      [
-        ind.proceso?.tipo || 'Indicador de Proceso',
-        ind.proceso?.nombre || 'Cantidad de ventas registradas por vendedor',
-        `${totalVentasVendedor} ventas registradas`
-      ],
-      [
-        ind.producto?.tipo || 'Indicador de Producto',
-        ind.producto?.nombre || 'Cantidad de ventas mensuales',
-        `${ind.producto?.cantidad_ventas_mensuales || 0} ventas mensuales`
-      ],
-    ],
-    theme: 'grid',
-    styles: { lineColor, lineWidth: 0.1 },
-    headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-    bodyStyles: { fontSize: 8, textColor: bodyText },
-    columnStyles: {
-      0: { cellWidth: 45, fontStyle: 'bold' },
-      1: { cellWidth: 65 },
-      2: { halign: 'right', fontStyle: 'bold' },
-    },
-    margin: { left: M, right: M, bottom: 14 },
-    didDrawPage: onNuevaPagina,
-  });
+          Y = (doc as any).lastAutoTable.finalY + 6;
 
-  Y = (doc as any).lastAutoTable.finalY + 6;
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
 
-  
+          seccion('RESUMEN DEL PERIODO');
 
-  seccion('CANTIDAD DE VENTAS REGISTRADAS POR VENDEDOR');
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `Durante el periodo seleccionado se finalizaron ${ind.eficacia?.ventas_finalizadas || 0} ventas de un total de ${ind.eficacia?.total_solicitudes_clientes || 0} solicitudes registradas.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
 
-  const vendedorBody = (ind.proceso?.detalle || []).map((v: any) => [
-    v.vendedor || '-',
-    `${v.cantidad_ventas || 0}`,
-    `S/ ${this.formatearMonto(v.total_vendido || 0)}`
-  ]);
+        } else if (this.indicadorSeleccionado === 'economia') {
+          seccion('INGRESO TOTAL POR VENTAS');
 
-  if (!vendedorBody.length) {
-    vendedorBody.push(['Sin datos', '0', 'S/ 0.00']);
-  }
+          autoTable(doc, {
+            startY: Y,
+            head: [['MÉTRICA', 'DATO / VALOR']],
+            body: [
+              [
+                'Ingreso total por ventas',
+                `S/ ${this.formatearMonto(ind.economia?.ingreso_total_ventas || 0)}`,
+              ],
+            ],
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'right', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
 
-  autoTable(doc, {
-    startY: Y,
-    head: [['VENDEDOR', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
-    body: vendedorBody,
-    theme: 'grid',
-    styles: { lineColor, lineWidth: 0.1 },
-    headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-    bodyStyles: { fontSize: 8, textColor: bodyText },
-    columnStyles: {
-      1: { halign: 'center' },
-      2: { halign: 'right', fontStyle: 'bold' },
-    },
-    margin: { left: M, right: M, bottom: 14 },
-    didDrawPage: onNuevaPagina,
-  });
+          Y = (doc as any).lastAutoTable.finalY + 6;
 
-  Y = (doc as any).lastAutoTable.finalY + 6;
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
 
-  seccion('CANTIDAD DE VENTAS MENSUALES');
+          seccion('RESUMEN DEL PERIODO');
 
-  const mensualBody = (ind.producto?.detalle_mensual || []).map((m: any) => [
-    m.mes || '-',
-    `${m.cantidad_ventas || 0}`,
-    `S/ ${this.formatearMonto(m.total_vendido || 0)}`
-  ]);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `El sistema registró un ingreso total de S/ ${this.formatearMonto(ind.economia?.ingreso_total_ventas || 0)} por ventas realizadas en el periodo seleccionado.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
 
-  if (!mensualBody.length) {
-    mensualBody.push(['Sin datos', '0', 'S/ 0.00']);
-  }
+        } else if (this.indicadorSeleccionado === 'proceso') {
+          seccion('CANTIDAD DE VENTAS REGISTRADAS POR VENDEDOR');
 
-  autoTable(doc, {
-    startY: Y,
-    head: [['MES', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
-    body: mensualBody,
-    theme: 'grid',
-    styles: { lineColor, lineWidth: 0.1 },
-    headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-    bodyStyles: { fontSize: 8, textColor: bodyText },
-    columnStyles: {
-      1: { halign: 'center' },
-      2: { halign: 'right', fontStyle: 'bold' },
-    },
-    margin: { left: M, right: M, bottom: 14 },
-    didDrawPage: onNuevaPagina,
-  });
-}
+          const vendedorBody = (ind.proceso?.detalle || []).map((v: any) => [
+            v.vendedor || '-',
+            `${v.cantidad_ventas || 0}`,
+            `S/ ${this.formatearMonto(v.total_vendido || 0)}`,
+          ]);
+
+          if (!vendedorBody.length) {
+            vendedorBody.push(['Sin datos', '0', 'S/ 0.00']);
+          }
+
+          autoTable(doc, {
+            startY: Y,
+            head: [['VENDEDOR', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
+            body: vendedorBody,
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'center', fontStyle: 'bold' },
+              2: { halign: 'right', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
+
+          Y = (doc as any).lastAutoTable.finalY + 6;
+
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
+
+          const totalVentas = (ind.proceso?.detalle || []).reduce(
+            (acc: number, item: any) => acc + Number(item.cantidad_ventas || 0),
+            0
+          );
+
+          seccion('RESUMEN DEL PERIODO');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `Durante el periodo seleccionado se registraron ${totalVentas} ventas distribuidas entre los vendedores del sistema.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
+
+        } else if (this.indicadorSeleccionado === 'producto') {
+          seccion('CANTIDAD DE VENTAS MENSUALES');
+
+          const mensualBody = (ind.producto?.detalle_mensual || []).map((m: any) => [
+            m.mes || '-',
+            `${m.cantidad_ventas || 0}`,
+            `S/ ${this.formatearMonto(m.total_vendido || 0)}`,
+          ]);
+
+          if (!mensualBody.length) {
+            mensualBody.push(['Sin datos', '0', 'S/ 0.00']);
+          }
+
+          autoTable(doc, {
+            startY: Y,
+            head: [['MES', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
+            body: mensualBody,
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'center', fontStyle: 'bold' },
+              2: { halign: 'right', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
+
+          Y = (doc as any).lastAutoTable.finalY + 6;
+
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
+
+          seccion('RESUMEN DEL PERIODO');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `Se registraron ${ind.producto?.cantidad_ventas_mensuales || 0} ventas durante el periodo seleccionado.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
+        }
+      }
 
       let fY = (doc as any).lastAutoTable?.finalY ?? Y;
       fY += 10;
