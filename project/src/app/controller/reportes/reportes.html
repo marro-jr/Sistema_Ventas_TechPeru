@@ -631,7 +631,15 @@
               </table>
             </div>
 
-            <div *ngSwitchCase="'coberturaCatalogo'" class="p-4 bg-white border rounded shadow-sm">
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              El <strong class="text-primary">{{ resultadosIndicadoresVentas.clientesRecurrentes?.tasa_recurrencia_porcentaje }}%</strong>
+              de los clientes atendidos en el periodo realizaron más de una compra.
+            </p>
+          </div>
+
+          <!-- Cobertura de catálogo vendido -->
+          <div *ngSwitchCase="'coberturaCatalogo'" class="p-4 bg-white border rounded shadow-sm">
             <h5 class="fw-bold mb-2">Cobertura de catálogo vendido</h5>
             <p class="text-muted small mb-4">
               Mide qué porcentaje del catálogo total registró al menos una venta durante el periodo.
@@ -662,12 +670,6 @@
             </div>
           </div>
 
-            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
-            <p class="mb-0 text-muted">
-              El <strong class="text-primary">{{ resultadosIndicadoresVentas.clientesRecurrentes?.tasa_recurrencia_porcentaje }}%</strong>
-              de los clientes atendidos en el periodo realizaron más de una compra.
-            </p>
-          </div>
         </div>
       </div>
 
