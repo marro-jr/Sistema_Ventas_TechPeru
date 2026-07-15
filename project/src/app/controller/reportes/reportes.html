@@ -136,8 +136,8 @@
               <path d="M7 16l4-4 3 3 5-7"></path>
             </svg>
           </div>
-          <h6 class="fw-bold mb-2">Indicadores de Ventas</h6>
-          <p class="small text-muted mb-0">Muestra indicadores de eficacia, economía, proceso y producto según el documento del proyecto.</p>
+            <h6 class="fw-bold mb-2">Indicadores de Ventas</h6>
+            <p class="small text-muted mb-0">Muestra indicadores comerciales: concentración de productos, método de pago preferido, stock crítico, canasta promedio y clientes recurrentes.</p>
         </div>
       </div>
     </div>
@@ -432,10 +432,12 @@
             <label class="fw-bold mb-2">Indicador</label>
 
             <select class="form-select" [(ngModel)]="indicadorSeleccionado">
-              <option value="eficacia">Nivel de ventas completadas</option>
-              <option value="economia">Ingreso total por ventas</option>
-              <option value="proceso">Cantidad de ventas registradas por vendedor</option>
-              <option value="producto">Cantidad de ventas mensuales</option>
+              <option value="concentracionProducto">Concentración de ventas por producto</option>
+              <option value="metodoPago">Método de pago preferido</option>
+              <option value="stockCritico">Nivel de stock crítico</option>
+              <option value="canastaPromedio">Tamaño promedio de la canasta de compra</option>
+              <option value="clientesRecurrentes">Tasa de clientes recurrentes</option>
+              <option value="coberturaCatalogo">Cobertura de catálogo vendido</option>
             </select>
 
           </div>
@@ -443,12 +445,120 @@
 
         <div class="px-4 pb-4" [ngSwitch]="indicadorSeleccionado">
 
-          <!-- Indicador de Eficacia -->
-          <div *ngSwitchCase="'eficacia'" class="p-4 bg-white border rounded shadow-sm">
-            <h5 class="fw-bold mb-2">Nivel de ventas completadas</h5>
+          <!-- Concentración de ventas por producto -->
+          <div *ngSwitchCase="'concentracionProducto'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Concentración de ventas por producto</h5>
 
             <p class="text-muted">
-              Mide el porcentaje de solicitudes de clientes que se concretan exitosamente en ventas realizadas durante el periodo seleccionado.
+              Mide qué porcentaje de las unidades vendidas corresponde al producto más demandado durante el periodo seleccionado.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Producto</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Unidades vendidas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of resultadosIndicadoresVentas.concentracionProducto?.detalle">
+                    <td class="py-3 px-4 fw-medium text-dark">{{ p.producto }}</td>
+                    <td class="py-3 px-4 text-end fw-bold">{{ p.unidades_vendidas }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              El producto <strong>{{ resultadosIndicadoresVentas.concentracionProducto?.producto_top }}</strong>
+              concentró el
+              <strong class="text-primary">{{ resultadosIndicadoresVentas.concentracionProducto?.concentracion_porcentaje }}%</strong>
+              del total de unidades vendidas en el periodo.
+            </p>
+          </div>
+
+          <!-- Método de pago preferido -->
+          <div *ngSwitchCase="'metodoPago'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Método de pago preferido</h5>
+
+            <p class="text-muted">
+              Mide cuál es la forma de pago más utilizada por los clientes al concretar sus compras en el periodo seleccionado.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Método de pago</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of resultadosIndicadoresVentas.metodoPago?.detalle">
+                    <td class="py-3 px-4 fw-medium text-dark">{{ m.metodo_pago }}</td>
+                    <td class="py-3 px-4 text-end fw-bold">{{ m.cantidad }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              El método de pago preferido fue
+              <strong>{{ resultadosIndicadoresVentas.metodoPago?.metodo_top }}</strong>, con el
+              <strong class="text-success">{{ resultadosIndicadoresVentas.metodoPago?.metodo_porcentaje }}%</strong>
+              de las transacciones del periodo.
+            </p>
+          </div>
+
+          <!-- Nivel de stock crítico -->
+          <div *ngSwitchCase="'stockCritico'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Nivel de stock crítico</h5>
+
+            <p class="text-muted">
+              Mide el porcentaje de productos cuyo stock actual se encuentra en o por debajo del mínimo establecido.
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #f8fafc;">
+                  <tr>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Producto</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Stock actual</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Stock mínimo</th>
+                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of resultadosIndicadoresVentas.stockCritico?.detalle">
+                    <td class="py-3 px-4 fw-medium text-dark">{{ p.producto }}</td>
+                    <td class="py-3 px-4 text-center">{{ p.stock_actual }}</td>
+                    <td class="py-3 px-4 text-center">{{ p.stock_minimo }}</td>
+                    <td class="py-3 px-4 text-center fw-bold" [class.text-danger]="p.stock_actual <= p.stock_minimo">
+                      {{ p.stock_actual <= p.stock_minimo ? 'Bajo stock' : 'Stock suficiente' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
+            <p class="mb-0 text-muted">
+              El <strong class="text-danger">{{ resultadosIndicadoresVentas.stockCritico?.stock_critico_porcentaje }}%</strong>
+              del catálogo (<strong>{{ resultadosIndicadoresVentas.stockCritico?.productos_criticos }}</strong> de
+              <strong>{{ resultadosIndicadoresVentas.stockCritico?.total_productos }}</strong> productos)
+              se encuentra en nivel de stock crítico.
+            </p>
+          </div>
+
+          <!-- Tamaño promedio de la canasta de compra -->
+          <div *ngSwitchCase="'canastaPromedio'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Tamaño promedio de la canasta de compra</h5>
+
+            <p class="text-muted">
+              Mide el número promedio de productos distintos que un cliente incluye en una sola venta durante el periodo seleccionado.
             </p>
 
             <div class="table-responsive">
@@ -459,26 +569,19 @@
                     <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Dato / Valor</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   <tr>
-                    <td class="py-3 px-4">Ventas finalizadas</td>
-                    <td class="py-3 px-4 text-end fw-bold">
-                      {{ resultadosIndicadoresVentas.eficacia?.ventas_finalizadas }}
-                    </td>
+                    <td class="py-3 px-4">Total de ventas del periodo</td>
+                    <td class="py-3 px-4 text-end fw-bold">{{ resultadosIndicadoresVentas.canastaPromedio?.total_ventas }}</td>
                   </tr>
-
                   <tr>
-                    <td class="py-3 px-4">Total de solicitudes de clientes</td>
-                    <td class="py-3 px-4 text-end fw-bold">
-                      {{ resultadosIndicadoresVentas.eficacia?.total_solicitudes_clientes }}
-                    </td>
+                    <td class="py-3 px-4">Suma de productos distintos por venta</td>
+                    <td class="py-3 px-4 text-end fw-bold">{{ resultadosIndicadoresVentas.canastaPromedio?.suma_productos_distintos }}</td>
                   </tr>
-
                   <tr>
-                    <td class="py-3 px-4">Nivel de ventas completadas</td>
+                    <td class="py-3 px-4">Canasta promedio</td>
                     <td class="py-3 px-4 text-end fw-bold text-primary">
-                      {{ resultadosIndicadoresVentas.eficacia?.nivel_ventas_completadas_porcentaje }}%
+                      {{ resultadosIndicadoresVentas.canastaPromedio?.canasta_promedio }} productos por venta
                     </td>
                   </tr>
                 </tbody>
@@ -487,20 +590,18 @@
 
             <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
             <p class="mb-0 text-muted">
-              Durante el periodo seleccionado se finalizaron
-              <strong>{{ resultadosIndicadoresVentas.eficacia?.ventas_finalizadas }}</strong>
-              ventas de un total de
-              <strong>{{ resultadosIndicadoresVentas.eficacia?.total_solicitudes_clientes }}</strong>
-              solicitudes registradas.
+              En promedio, cada venta del periodo incluyó
+              <strong>{{ resultadosIndicadoresVentas.canastaPromedio?.canasta_promedio }}</strong>
+              productos distintos.
             </p>
           </div>
 
-          <!-- Indicador de Economía -->
-          <div *ngSwitchCase="'economia'" class="p-4 bg-white border rounded shadow-sm">
-            <h5 class="fw-bold mb-2">Ingreso total por ventas</h5>
+          <!-- Tasa de clientes recurrentes -->
+          <div *ngSwitchCase="'clientesRecurrentes'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Tasa de clientes recurrentes</h5>
 
             <p class="text-muted">
-              Mide el monto monetario total generado por las ventas de teclados realizadas durante el periodo seleccionado.
+              Mide el porcentaje de clientes que realizaron más de una compra durante el periodo analizado.
             </p>
 
             <div class="table-responsive">
@@ -511,97 +612,62 @@
                     <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Dato / Valor</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   <tr>
-                    <td class="py-3 px-4">Ingreso total por ventas</td>
-                    <td class="py-3 px-4 text-end fw-bold text-success">
-                      S/ {{ (resultadosIndicadoresVentas.economia?.ingreso_total_ventas || 0) | number:'1.2-2' }}
+                    <td class="py-3 px-4">Total de clientes distintos</td>
+                    <td class="py-3 px-4 text-end fw-bold">{{ resultadosIndicadoresVentas.clientesRecurrentes?.total_clientes }}</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 px-4">Clientes recurrentes (más de 1 compra)</td>
+                    <td class="py-3 px-4 text-end fw-bold">{{ resultadosIndicadoresVentas.clientesRecurrentes?.clientes_recurrentes }}</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 px-4">Tasa de recurrencia</td>
+                    <td class="py-3 px-4 text-end fw-bold text-primary">
+                      {{ resultadosIndicadoresVentas.clientesRecurrentes?.tasa_recurrencia_porcentaje }}%
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+
+            <div *ngSwitchCase="'coberturaCatalogo'" class="p-4 bg-white border rounded shadow-sm">
+            <h5 class="fw-bold mb-2">Cobertura de catálogo vendido</h5>
+            <p class="text-muted small mb-4">
+              Mide qué porcentaje del catálogo total registró al menos una venta durante el periodo.
+            </p>
+
+            <table class="table table-borderless mb-4">
+              <tbody>
+                <tr>
+                  <td class="py-3 px-4 text-muted">Total de productos en catálogo</td>
+                  <td class="py-3 px-4 text-end fw-bold">{{ resultadosIndicadoresVentas.coberturaCatalogo?.total_productos_catalogo }}</td>
+                </tr>
+                <tr class="border-top">
+                  <td class="py-3 px-4 text-muted">Productos con venta en el periodo</td>
+                  <td class="py-3 px-4 text-end fw-bold">{{ resultadosIndicadoresVentas.coberturaCatalogo?.productos_vendidos_distintos }}</td>
+                </tr>
+                <tr class="border-top">
+                  <td class="py-3 px-4 fw-bold">Cobertura de catálogo</td>
+                  <td class="py-3 px-4 text-end fw-bold text-primary">
+                    {{ resultadosIndicadoresVentas.coberturaCatalogo?.cobertura_porcentaje }}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="alert alert-info small mb-0">
+              El <strong class="text-primary">{{ resultadosIndicadoresVentas.coberturaCatalogo?.cobertura_porcentaje }}%</strong>
+              del catálogo registró al menos una venta durante el periodo seleccionado.
+            </div>
+          </div>
 
             <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
             <p class="mb-0 text-muted">
-              El sistema registró un ingreso total de
-              <strong>
-                S/ {{ (resultadosIndicadoresVentas.economia?.ingreso_total_ventas || 0) | number:'1.2-2' }}
-              </strong>
-              por ventas realizadas en el periodo seleccionado.
+              El <strong class="text-primary">{{ resultadosIndicadoresVentas.clientesRecurrentes?.tasa_recurrencia_porcentaje }}%</strong>
+              de los clientes atendidos en el periodo realizaron más de una compra.
             </p>
           </div>
-
-          <!-- Indicador de Proceso -->
-          <div *ngSwitchCase="'proceso'" class="p-4 bg-white border rounded shadow-sm">
-            <h5 class="fw-bold mb-2">Cantidad de ventas registradas por vendedor</h5>
-
-            <p class="text-muted">
-              Mide el número de ventas que cada vendedor registró en el sistema durante el periodo seleccionado.
-            </p>
-
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead style="background-color: #f8fafc;">
-                  <tr>
-                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Vendedor</th>
-                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de ventas</th>
-                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total vendido</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr *ngFor="let v of resultadosIndicadoresVentas.proceso?.detalle">
-                    <td class="py-3 px-4 fw-medium text-dark">{{ v.vendedor }}</td>
-                    <td class="py-3 px-4 text-center fw-bold">{{ v.cantidad_ventas }}</td>
-                    <td class="py-3 px-4 text-end fw-bold">
-                      S/ {{ (v.total_vendido || 0) | number:'1.2-2' }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Indicador de Producto -->
-          <div *ngSwitchCase="'producto'" class="p-4 bg-white border rounded shadow-sm">
-            <h5 class="fw-bold mb-2">Cantidad de ventas mensuales</h5>
-
-            <p class="text-muted">
-              Mide la cantidad total de ventas de teclados registradas exitosamente en el sistema durante el periodo seleccionado.
-            </p>
-
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead style="background-color: #f8fafc;">
-                  <tr>
-                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase">Mes</th>
-                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-center">Cantidad de ventas</th>
-                    <th class="py-3 px-4 text-muted fw-medium small text-uppercase text-end">Total vendido</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr *ngFor="let mes of resultadosIndicadoresVentas.producto?.detalle_mensual">
-                    <td class="py-3 px-4 fw-medium text-dark">{{ mes.mes }}</td>
-                    <td class="py-3 px-4 text-center fw-bold">{{ mes.cantidad_ventas }}</td>
-                    <td class="py-3 px-4 text-end fw-bold">
-                      S/ {{ (mes.total_vendido || 0) | number:'1.2-2' }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <h6 class="fw-bold mt-4">Resumen del periodo:</h6>
-            <p class="mb-0 text-muted">
-              Se registraron
-              <strong>{{ resultadosIndicadoresVentas.producto?.cantidad_ventas_mensuales }}</strong>
-              ventas en el periodo seleccionado.
-            </p>
-          </div>
-
         </div>
       </div>
 

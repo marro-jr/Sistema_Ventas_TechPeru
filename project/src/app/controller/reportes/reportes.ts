@@ -13,8 +13,13 @@ type TipoReporte =
   | 'ventasFechas'
   | 'indicadoresVentas';
 
-type TipoIndicador = 'eficacia' | 'economia' | 'proceso' | 'producto';
-
+type TipoIndicador =
+  | 'concentracionProducto'
+  | 'metodoPago'
+  | 'stockCritico'
+  | 'canastaPromedio'
+  | 'clientesRecurrentes'
+  | 'coberturaCatalogo';
 @Component({
   selector: 'app-reportes',
   standalone: true,
@@ -36,7 +41,7 @@ export class Reportes implements OnInit {
   resultadosVentasPorFechas: any[] | null = null;
   resultadosIndicadoresVentas: any = null;
 
-  indicadorSeleccionado: TipoIndicador = 'eficacia';
+  indicadorSeleccionado: TipoIndicador = 'concentracionProducto';
 
   cargando: boolean = false;
   esPeriodoLargo: boolean = false;
@@ -68,7 +73,7 @@ export class Reportes implements OnInit {
     this.limpiarResultados();
 
     if (tipo === 'indicadoresVentas') {
-      this.indicadorSeleccionado = this.indicadorSeleccionado || 'eficacia';
+      this.indicadorSeleccionado = this.indicadorSeleccionado || 'concentracionProducto';
     }
 
     if (this.fechaInicio && this.fechaFin) {
@@ -305,17 +310,21 @@ export class Reportes implements OnInit {
   }
 
   obtenerTituloIndicadorPDF(): string {
-    switch (this.indicadorSeleccionado) {
-      case 'eficacia':
-        return 'REPORTE DE NIVEL DE VENTAS COMPLETADAS';
-      case 'economia':
-        return 'REPORTE DE INGRESO TOTAL POR VENTAS';
-      case 'proceso':
-        return 'REPORTE DE VENTAS REGISTRADAS POR VENDEDOR';
-      case 'producto':
-        return 'REPORTE DE CANTIDAD DE VENTAS MENSUALES';
-      default:
-        return 'REPORTE DE INDICADORES DE VENTAS';
+  switch (this.indicadorSeleccionado) {
+    case 'concentracionProducto':
+      return 'REPORTE DE CONCENTRACIÓN DE VENTAS POR PRODUCTO';
+    case 'metodoPago':
+      return 'REPORTE DE MÉTODO DE PAGO PREFERIDO';
+    case 'stockCritico':
+      return 'REPORTE DE NIVEL DE STOCK CRÍTICO';
+    case 'canastaPromedio':
+      return 'REPORTE DE TAMAÑO PROMEDIO DE CANASTA DE COMPRA';
+    case 'clientesRecurrentes':
+      return 'REPORTE DE TASA DE CLIENTES RECURRENTES';
+    case 'coberturaCatalogo':
+      return 'REPORTE DE COBERTURA DE CATÁLOGO VENDIDO';
+    default:
+      return 'REPORTE DE INDICADORES DE VENTAS';
     }
   }
 
@@ -325,33 +334,45 @@ export class Reportes implements OnInit {
     }
 
     switch (this.indicadorSeleccionado) {
-      case 'eficacia':
-        return (
-          this.resultadosIndicadoresVentas.eficacia?.formula ||
-          'Nivel de Ventas Completadas % = (Nro. de ventas finalizadas / Nro. total de solicitudes de clientes) * 100'
-        );
+  case 'concentracionProducto':
+    return (
+      this.resultadosIndicadoresVentas.concentracionProducto?.formula ||
+      'Concentración % = (Unidades vendidas del producto más vendido / Total de unidades vendidas del periodo) * 100'
+    );
 
-      case 'economia':
-        return (
-          this.resultadosIndicadoresVentas.economia?.formula ||
-          'Ingreso Total por Ventas = Σ(Precio unitario del teclado * Cantidad vendida)'
-        );
+  case 'metodoPago':
+    return (
+      this.resultadosIndicadoresVentas.metodoPago?.formula ||
+      'Método Preferido % = (Nro. de ventas pagadas con el método X / Total de ventas del periodo) * 100'
+    );
 
-      case 'proceso':
-        return (
-          this.resultadosIndicadoresVentas.proceso?.formula ||
-          'Ventas por vendedor = Σ Ventas registradas por el vendedor X en el mes'
-        );
+  case 'stockCritico':
+    return (
+      this.resultadosIndicadoresVentas.stockCritico?.formula ||
+      'Stock Crítico % = (Nro. de productos con stock actual <= stock mínimo / Total de productos registrados) * 100'
+    );
 
-      case 'producto':
-        return (
-          this.resultadosIndicadoresVentas.producto?.formula ||
-          'Cantidad de ventas mensuales = Σ Número total de ventas registradas en el mes'
-        );
+  case 'canastaPromedio':
+    return (
+      this.resultadosIndicadoresVentas.canastaPromedio?.formula ||
+      'Canasta Promedio = Σ(Nro. de productos distintos por venta) / Nro. total de ventas del periodo'
+    );
 
-      default:
-        return '-';
-    }
+  case 'clientesRecurrentes':
+    return (
+      this.resultadosIndicadoresVentas.clientesRecurrentes?.formula ||
+      'Tasa de Recurrencia % = (Nro. de clientes con más de una compra / Total de clientes distintos del periodo) * 100'
+    );
+
+  case 'coberturaCatalogo':
+    return (
+      this.resultadosIndicadoresVentas.coberturaCatalogo?.formula ||
+      'Cobertura % = (Nro. de productos distintos vendidos en el periodo / Total de productos registrados) * 100'
+    );
+
+  default:
+    return '-';
+}
   }
 
   async descargarPDF(): Promise<void> {
@@ -829,16 +850,149 @@ export class Reportes implements OnInit {
       } else if (this.reporteSeleccionado === 'indicadoresVentas' && this.resultadosIndicadoresVentas) {
         const ind = this.resultadosIndicadoresVentas;
 
-        if (this.indicadorSeleccionado === 'eficacia') {
-          seccion('NIVEL DE VENTAS COMPLETADAS');
+        if (this.indicadorSeleccionado === 'concentracionProducto') {
+          seccion('CONCENTRACIÓN DE VENTAS POR PRODUCTO');
+
+          const concentracionBody = (ind.concentracionProducto?.detalle || []).map((p: any) => [
+            p.producto || '-',
+            `${p.unidades_vendidas || 0}`,
+          ]);
+
+          if (!concentracionBody.length) {
+            concentracionBody.push(['Sin datos', '0']);
+          }
+
+          autoTable(doc, {
+            startY: Y,
+            head: [['PRODUCTO', 'UNIDADES VENDIDAS']],
+            body: concentracionBody,
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'center', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
+
+          Y = (doc as any).lastAutoTable.finalY + 6;
+
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
+
+          seccion('RESUMEN DEL PERIODO');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `El producto "${ind.concentracionProducto?.producto_top || 'Sin datos'}" concentró el ${ind.concentracionProducto?.concentracion_porcentaje || 0}% del total de unidades vendidas en el periodo.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
+
+        } else if (this.indicadorSeleccionado === 'metodoPago') {
+          seccion('MÉTODO DE PAGO PREFERIDO');
+
+          const metodoBody = (ind.metodoPago?.detalle || []).map((m: any) => [
+            m.metodo_pago || '-',
+            `${m.cantidad || 0}`,
+          ]);
+
+          if (!metodoBody.length) {
+            metodoBody.push(['Sin datos', '0']);
+          }
+
+          autoTable(doc, {
+            startY: Y,
+            head: [['MÉTODO DE PAGO', 'CANTIDAD']],
+            body: metodoBody,
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'center', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
+
+          Y = (doc as any).lastAutoTable.finalY + 6;
+
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
+
+          seccion('RESUMEN DEL PERIODO');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `El método de pago preferido fue "${ind.metodoPago?.metodo_top || 'Sin datos'}", representando el ${ind.metodoPago?.metodo_porcentaje || 0}% de las transacciones del periodo.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
+
+        } else if (this.indicadorSeleccionado === 'stockCritico') {
+          seccion('NIVEL DE STOCK CRÍTICO');
+
+          const stockBody = (ind.stockCritico?.detalle || []).map((p: any) => [
+            p.producto || '-',
+            `${p.stock_actual || 0}`,
+            `${p.stock_minimo || 0}`,
+            Number(p.stock_actual) <= Number(p.stock_minimo) ? 'Bajo stock' : 'Stock suficiente',
+          ]);
+
+          if (!stockBody.length) {
+            stockBody.push(['Sin datos', '0', '0', '-']);
+          }
+
+          autoTable(doc, {
+            startY: Y,
+            head: [['PRODUCTO', 'STOCK ACTUAL', 'STOCK MÍNIMO', 'ESTADO']],
+            body: stockBody,
+            theme: 'grid',
+            styles: { lineColor, lineWidth: 0.1 },
+            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, textColor: bodyText },
+            columnStyles: {
+              1: { halign: 'center' },
+              2: { halign: 'center' },
+              3: { halign: 'center', fontStyle: 'bold' },
+            },
+            margin: { left: M, right: M, bottom: 14 },
+            didDrawPage: onNuevaPagina,
+          });
+
+          Y = (doc as any).lastAutoTable.finalY + 6;
+
+          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
+
+          seccion('RESUMEN DEL PERIODO');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...NEGRO);
+          doc.text(
+            `El ${ind.stockCritico?.stock_critico_porcentaje || 0}% del catálogo (${ind.stockCritico?.productos_criticos || 0} de ${ind.stockCritico?.total_productos || 0} productos) se encuentra en nivel de stock crítico.`,
+            M,
+            Y,
+            { maxWidth: pageW - M * 2 }
+          );
+
+        } else if (this.indicadorSeleccionado === 'canastaPromedio') {
+          seccion('TAMAÑO PROMEDIO DE LA CANASTA DE COMPRA');
 
           autoTable(doc, {
             startY: Y,
             head: [['MÉTRICA', 'DATO / VALOR']],
             body: [
-              ['Ventas finalizadas', `${ind.eficacia?.ventas_finalizadas || 0}`],
-              ['Total de solicitudes de clientes', `${ind.eficacia?.total_solicitudes_clientes || 0}`],
-              ['Nivel de ventas completadas', `${ind.eficacia?.nivel_ventas_completadas_porcentaje || 0}%`],
+              ['Total de ventas del periodo', `${ind.canastaPromedio?.total_ventas || 0}`],
+              ['Suma de productos distintos por venta', `${ind.canastaPromedio?.suma_productos_distintos || 0}`],
+              ['Canasta promedio', `${ind.canastaPromedio?.canasta_promedio || 0} productos por venta`],
             ],
             theme: 'grid',
             styles: { lineColor, lineWidth: 0.1 },
@@ -861,23 +1015,22 @@ export class Reportes implements OnInit {
           doc.setFontSize(9);
           doc.setTextColor(...NEGRO);
           doc.text(
-            `Durante el periodo seleccionado se finalizaron ${ind.eficacia?.ventas_finalizadas || 0} ventas de un total de ${ind.eficacia?.total_solicitudes_clientes || 0} solicitudes registradas.`,
+            `En promedio, cada venta del periodo incluyó ${ind.canastaPromedio?.canasta_promedio || 0} productos distintos.`,
             M,
             Y,
             { maxWidth: pageW - M * 2 }
           );
 
-        } else if (this.indicadorSeleccionado === 'economia') {
-          seccion('INGRESO TOTAL POR VENTAS');
+        } else if (this.indicadorSeleccionado === 'clientesRecurrentes') {
+          seccion('TASA DE CLIENTES RECURRENTES');
 
           autoTable(doc, {
             startY: Y,
             head: [['MÉTRICA', 'DATO / VALOR']],
             body: [
-              [
-                'Ingreso total por ventas',
-                `S/ ${this.formatearMonto(ind.economia?.ingreso_total_ventas || 0)}`,
-              ],
+              ['Total de clientes distintos', `${ind.clientesRecurrentes?.total_clientes || 0}`],
+              ['Clientes recurrentes (más de 1 compra)', `${ind.clientesRecurrentes?.clientes_recurrentes || 0}`],
+              ['Tasa de recurrencia', `${ind.clientesRecurrentes?.tasa_recurrencia_porcentaje || 0}%`],
             ],
             theme: 'grid',
             styles: { lineColor, lineWidth: 0.1 },
@@ -900,86 +1053,29 @@ export class Reportes implements OnInit {
           doc.setFontSize(9);
           doc.setTextColor(...NEGRO);
           doc.text(
-            `El sistema registró un ingreso total de S/ ${this.formatearMonto(ind.economia?.ingreso_total_ventas || 0)} por ventas realizadas en el periodo seleccionado.`,
+            `El ${ind.clientesRecurrentes?.tasa_recurrencia_porcentaje || 0}% de los clientes atendidos en el periodo (${ind.clientesRecurrentes?.clientes_recurrentes || 0} de ${ind.clientesRecurrentes?.total_clientes || 0}) realizaron más de una compra.`,
             M,
             Y,
             { maxWidth: pageW - M * 2 }
           );
 
-        } else if (this.indicadorSeleccionado === 'proceso') {
-          seccion('CANTIDAD DE VENTAS REGISTRADAS POR VENDEDOR');
-
-          const vendedorBody = (ind.proceso?.detalle || []).map((v: any) => [
-            v.vendedor || '-',
-            `${v.cantidad_ventas || 0}`,
-            `S/ ${this.formatearMonto(v.total_vendido || 0)}`,
-          ]);
-
-          if (!vendedorBody.length) {
-            vendedorBody.push(['Sin datos', '0', 'S/ 0.00']);
-          }
+        } else if (this.indicadorSeleccionado === 'coberturaCatalogo') {
+          seccion('COBERTURA DE CATÁLOGO VENDIDO');
 
           autoTable(doc, {
             startY: Y,
-            head: [['VENDEDOR', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
-            body: vendedorBody,
+            head: [['MÉTRICA', 'DATO / VALOR']],
+            body: [
+              ['Total de productos en catálogo', `${ind.coberturaCatalogo?.total_productos_catalogo || 0}`],
+              ['Productos con venta en el periodo', `${ind.coberturaCatalogo?.productos_vendidos_distintos || 0}`],
+              ['Cobertura de catálogo', `${ind.coberturaCatalogo?.cobertura_porcentaje || 0}%`],
+            ],
             theme: 'grid',
             styles: { lineColor, lineWidth: 0.1 },
             headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
             bodyStyles: { fontSize: 8, textColor: bodyText },
             columnStyles: {
-              1: { halign: 'center', fontStyle: 'bold' },
-              2: { halign: 'right', fontStyle: 'bold' },
-            },
-            margin: { left: M, right: M, bottom: 14 },
-            didDrawPage: onNuevaPagina,
-          });
-
-          Y = (doc as any).lastAutoTable.finalY + 6;
-
-          agregarFormulaIndicador(this.obtenerFormulaIndicadorSeleccionado());
-
-          const totalVentas = (ind.proceso?.detalle || []).reduce(
-            (acc: number, item: any) => acc + Number(item.cantidad_ventas || 0),
-            0
-          );
-
-          seccion('RESUMEN DEL PERIODO');
-
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(9);
-          doc.setTextColor(...NEGRO);
-          doc.text(
-            `Durante el periodo seleccionado se registraron ${totalVentas} ventas distribuidas entre los vendedores del sistema.`,
-            M,
-            Y,
-            { maxWidth: pageW - M * 2 }
-          );
-
-        } else if (this.indicadorSeleccionado === 'producto') {
-          seccion('CANTIDAD DE VENTAS MENSUALES');
-
-          const mensualBody = (ind.producto?.detalle_mensual || []).map((m: any) => [
-            m.mes || '-',
-            `${m.cantidad_ventas || 0}`,
-            `S/ ${this.formatearMonto(m.total_vendido || 0)}`,
-          ]);
-
-          if (!mensualBody.length) {
-            mensualBody.push(['Sin datos', '0', 'S/ 0.00']);
-          }
-
-          autoTable(doc, {
-            startY: Y,
-            head: [['MES', 'CANTIDAD DE VENTAS', 'TOTAL VENDIDO']],
-            body: mensualBody,
-            theme: 'grid',
-            styles: { lineColor, lineWidth: 0.1 },
-            headStyles: { fillColor: headColor, textColor: headText, fontStyle: 'bold', fontSize: 8 },
-            bodyStyles: { fontSize: 8, textColor: bodyText },
-            columnStyles: {
-              1: { halign: 'center', fontStyle: 'bold' },
-              2: { halign: 'right', fontStyle: 'bold' },
+              1: { halign: 'right', fontStyle: 'bold' },
             },
             margin: { left: M, right: M, bottom: 14 },
             didDrawPage: onNuevaPagina,
@@ -995,7 +1091,7 @@ export class Reportes implements OnInit {
           doc.setFontSize(9);
           doc.setTextColor(...NEGRO);
           doc.text(
-            `Se registraron ${ind.producto?.cantidad_ventas_mensuales || 0} ventas durante el periodo seleccionado.`,
+            `El ${ind.coberturaCatalogo?.cobertura_porcentaje || 0}% del catálogo (${ind.coberturaCatalogo?.productos_vendidos_distintos || 0} de ${ind.coberturaCatalogo?.total_productos_catalogo || 0} productos) registró al menos una venta durante el periodo.`,
             M,
             Y,
             { maxWidth: pageW - M * 2 }

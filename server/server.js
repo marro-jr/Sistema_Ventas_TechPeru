@@ -17,9 +17,9 @@ app.use(bodyParser.json());
 const puerto = 3000;
 
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "tech_user",
-  password: "123456",
+  host: "127.0.0.1",
+  user: "root",
+  password: "",
   database: "db_tech_peru",
   port: 3306
 });
@@ -1232,156 +1232,238 @@ app.get("/reportes/ventas-por-fechas", (req, res) => {
 app.get("/reportes/indicadores-ventas", (req, res) => {
   const { fecha_inicio, fecha_fin } = req.query;
 
-  let condicionGeneral = "WHERE 1 = 1";
   let condicionCompletadas = "WHERE v.estado = 'Completado'";
   let parametros = [];
 
   if (fecha_inicio && fecha_fin) {
-    condicionGeneral += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
     condicionCompletadas += " AND DATE(v.fecha) >= ? AND DATE(v.fecha) <= ?";
     parametros = [fecha_inicio, fecha_fin];
   }
 
-  // INDICADOR DE EFICACIA
-  // Nivel de ventas completadas % =
-  // Nro. de ventas finalizadas / Nro. total de solicitudes de clientes * 100
-  // En este sistema se toma cada venta registrada como una solicitud del cliente.
-  const queryEficacia = `
+  // INDICADOR 1: CONCENTRACIÓN DE VENTAS POR PRODUCTO
+  // Concentración % = (Unidades vendidas del producto más vendido / Total de unidades vendidas) * 100
+  const queryConcentracionProducto = `
     SELECT
-      COUNT(v.id_venta) AS total_solicitudes_clientes,
-      SUM(CASE WHEN v.estado = 'Completado' THEN 1 ELSE 0 END) AS ventas_finalizadas
+      p.nombre AS producto,
+      SUM(dv.cantidad) AS unidades_vendidas
     FROM venta v
-    ${condicionGeneral};
-  `;
-
-  // INDICADOR DE ECONOMÍA
-  // Ingreso Total por Ventas =
-  // Σ(Precio unitario del teclado * Cantidad vendida)
-  const queryEconomia = `
-    SELECT
-      IFNULL(SUM(dv.precio_unitario * dv.cantidad), 0) AS ingreso_total_ventas
-    FROM venta v
-    INNER JOIN detalleventa dv
-      ON v.id_venta = dv.id_venta
-    ${condicionCompletadas};
-  `;
-
-  // INDICADOR DE PROCESO
-  // Ventas por vendedor =
-  // Σ Ventas registradas por el vendedor X en el mes
-  const queryProceso = `
-    SELECT
-      u.nombre AS vendedor,
-      COUNT(v.id_venta) AS cantidad_ventas,
-      IFNULL(SUM(v.total), 0) AS total_vendido
-    FROM venta v
-    INNER JOIN vendedor ve
-      ON v.id_vendedor = ve.id_vendedor
-    INNER JOIN usuario u
-      ON ve.id_usuario = u.id_usuario
+    INNER JOIN detalleventa dv ON v.id_venta = dv.id_venta
+    INNER JOIN producto p ON dv.id_producto = p.id_producto
     ${condicionCompletadas}
-    GROUP BY u.nombre
-    ORDER BY cantidad_ventas DESC;
+    GROUP BY p.id_producto, p.nombre
+    ORDER BY unidades_vendidas DESC;
   `;
 
-  // INDICADOR DE PRODUCTO
-  // Cantidad de ventas mensuales =
-  // Σ Número total de ventas registradas en el mes
-  const queryProducto = `
+  // INDICADOR 2: MÉTODO DE PAGO PREFERIDO
+  // Método Preferido % = (Nro. de ventas con el método X / Total de ventas del periodo) * 100
+  const queryMetodoPago = `
     SELECT
-      DATE_FORMAT(v.fecha, '%Y-%m') AS mes,
-      COUNT(v.id_venta) AS cantidad_ventas,
-      IFNULL(SUM(v.total), 0) AS total_vendido
+      pa.metodo_pago,
+      COUNT(pa.id_pago) AS cantidad
+    FROM venta v
+    INNER JOIN pago pa ON v.id_venta = pa.id_venta
+    ${condicionCompletadas}
+    GROUP BY pa.metodo_pago
+    ORDER BY cantidad DESC;
+  `;
+
+  // INDICADOR 3: NIVEL DE STOCK CRÍTICO
+  // Stock Crítico % = (Nro. de productos con stock actual <= stock mínimo / Total de productos) * 100
+  const queryStockCritico = `
+    SELECT
+      p.id_producto,
+      p.nombre AS producto,
+      i.stock_actual,
+      i.stock_minimo
+    FROM producto p
+    INNER JOIN inventario i ON p.id_producto = i.id_producto;
+  `;
+
+  // INDICADOR 4: TAMAÑO PROMEDIO DE LA CANASTA DE COMPRA
+  // Canasta Promedio = Σ(Nro. de productos distintos por venta) / Nro. total de ventas
+  const queryCanastaPromedio = `
+    SELECT
+      dv.id_venta,
+      COUNT(DISTINCT dv.id_producto) AS productos_distintos
+    FROM venta v
+    INNER JOIN detalleventa dv ON v.id_venta = dv.id_venta
+    ${condicionCompletadas}
+    GROUP BY dv.id_venta;
+  `;
+
+  // INDICADOR 5: TASA DE CLIENTES RECURRENTES
+  // Tasa de Recurrencia % = (Nro. de clientes con más de una compra / Total de clientes distintos) * 100
+  const queryClientesRecurrentes = `
+    SELECT
+      v.id_cliente,
+      COUNT(v.id_venta) AS compras
     FROM venta v
     ${condicionCompletadas}
-    GROUP BY DATE_FORMAT(v.fecha, '%Y-%m')
-    ORDER BY mes ASC;
+    GROUP BY v.id_cliente;
   `;
 
-  db.query(queryEficacia, parametros, (err1, eficaciaResult) => {
+  db.query(queryConcentracionProducto, parametros, (err1, concentracionResult) => {
     if (err1) {
       return res.status(500).json({
-        error: `Error al obtener indicador de eficacia: ${err1}`
+        error: `Error al obtener concentración de ventas por producto: ${err1}`
       });
     }
 
-    db.query(queryEconomia, parametros, (err2, economiaResult) => {
+    db.query(queryMetodoPago, parametros, (err2, metodoPagoResult) => {
       if (err2) {
         return res.status(500).json({
-          error: `Error al obtener indicador de economía: ${err2}`
+          error: `Error al obtener método de pago preferido: ${err2}`
         });
       }
 
-      db.query(queryProceso, parametros, (err3, procesoResult) => {
+      db.query(queryStockCritico, (err3, stockResult) => {
         if (err3) {
           return res.status(500).json({
-            error: `Error al obtener indicador de proceso: ${err3}`
+            error: `Error al obtener nivel de stock crítico: ${err3}`
           });
         }
 
-        db.query(queryProducto, parametros, (err4, productoResult) => {
+        db.query(queryCanastaPromedio, parametros, (err4, canastaResult) => {
           if (err4) {
             return res.status(500).json({
-              error: `Error al obtener indicador de producto: ${err4}`
+              error: `Error al obtener tamaño promedio de canasta: ${err4}`
             });
           }
 
-          const totalSolicitudes = eficaciaResult[0]?.total_solicitudes_clientes || 0;
-          const ventasFinalizadas = eficaciaResult[0]?.ventas_finalizadas || 0;
+          db.query(queryClientesRecurrentes, parametros, (err5, clientesResult) => {
+            if (err5) {
+              return res.status(500).json({
+                error: `Error al obtener tasa de clientes recurrentes: ${err5}`
+              });
+            }
 
-          const nivelVentasCompletadas =
-            totalSolicitudes > 0
-              ? ((ventasFinalizadas / totalSolicitudes) * 100).toFixed(2)
+            // --- Cálculo 1: Concentración de ventas por producto ---
+            const totalUnidades = concentracionResult.reduce(
+              (acc, item) => acc + Number(item.unidades_vendidas || 0), 0
+            );
+            const productoTop = concentracionResult[0] || null;
+            const concentracionPorcentaje = totalUnidades > 0 && productoTop
+              ? ((productoTop.unidades_vendidas / totalUnidades) * 100).toFixed(2)
               : "0.00";
 
-          const totalVentasMensuales = productoResult.reduce(
-            (acc, item) => acc + Number(item.cantidad_ventas || 0),
-            0
-          );
+            // --- Cálculo 2: Método de pago preferido ---
+            const totalPagos = metodoPagoResult.reduce(
+              (acc, item) => acc + Number(item.cantidad || 0), 0
+            );
+            const metodoTop = metodoPagoResult[0] || null;
+            const metodoPorcentaje = totalPagos > 0 && metodoTop
+              ? ((metodoTop.cantidad / totalPagos) * 100).toFixed(2)
+              : "0.00";
 
-          res.json({
-            eficacia: {
-              tipo: "Indicador de Eficacia",
-              nombre: "Nivel de ventas completadas",
-              descripcion:
-                "Mide el porcentaje de solicitudes de clientes que se concretan exitosamente en ventas realizadas durante el mes.",
-              formula:
-                "Nivel de Ventas Completadas % = (Nro. de ventas finalizadas / Nro. total de solicitudes de clientes) * 100",
-              ventas_finalizadas: ventasFinalizadas,
-              total_solicitudes_clientes: totalSolicitudes,
-              nivel_ventas_completadas_porcentaje: nivelVentasCompletadas
-            },
+            // --- Cálculo 3: Nivel de stock crítico ---
+            const totalProductos = stockResult.length;
+            const productosCriticos = stockResult.filter(
+              p => Number(p.stock_actual) <= Number(p.stock_minimo)
+            );
+            const stockCriticoPorcentaje = totalProductos > 0
+              ? ((productosCriticos.length / totalProductos) * 100).toFixed(2)
+              : "0.00";
 
-            economia: {
-              tipo: "Indicador de Economía",
-              nombre: "Ingreso total por ventas",
-              descripcion:
-                "Mide el monto monetario total generado por las ventas de teclados realizadas durante un período mensual.",
-              formula:
-                "Ingreso Total por Ventas = Σ(Precio unitario del teclado * Cantidad vendida)",
-              ingreso_total_ventas: economiaResult[0]?.ingreso_total_ventas || 0
-            },
+            // --- Cálculo 4: Tamaño promedio de canasta ---
+            const totalVentasCanasta = canastaResult.length;
+            const sumaProductosDistintos = canastaResult.reduce(
+              (acc, item) => acc + Number(item.productos_distintos || 0), 0
+            );
+            const canastaPromedioValor = totalVentasCanasta > 0
+              ? (sumaProductosDistintos / totalVentasCanasta).toFixed(2)
+              : "0.00";
 
-            proceso: {
-              tipo: "Indicador de Proceso",
-              nombre: "Cantidad de ventas registradas por vendedor",
-              descripcion:
-                "Mide el número de ventas que cada vendedor registró en el sistema durante el mes.",
-              formula:
-                "Ventas por vendedor = Σ Ventas registradas por el vendedor X en el mes",
-              detalle: procesoResult
-            },
+            // --- Cálculo 5: Tasa de clientes recurrentes ---
+            const totalClientesDistintos = clientesResult.length;
+            const clientesRecurrentes = clientesResult.filter(c => Number(c.compras) > 1);
+            const tasaRecurrenciaPorcentaje = totalClientesDistintos > 0
+              ? ((clientesRecurrentes.length / totalClientesDistintos) * 100).toFixed(2)
+              : "0.00";
+              
+            // --- Cálculo 6: Cobertura de catálogo vendido ---
+            const productosVendidosDistintos = concentracionResult.length;
+            const coberturaCatalogoPorcentaje = totalProductos > 0
+              ? ((productosVendidosDistintos / totalProductos) * 100).toFixed(2)
+              : "0.00";
 
-            producto: {
-              tipo: "Indicador de Producto",
-              nombre: "Cantidad de ventas mensuales",
-              descripcion:
-                "Mide la cantidad total de ventas de teclados registradas exitosamente en el sistema durante un período mensual.",
-              formula:
-                "Cantidad de ventas mensuales = Σ Número total de ventas registradas en el mes",
-              cantidad_ventas_mensuales: totalVentasMensuales,
-              detalle_mensual: productoResult
-            }
+            res.json({
+              concentracionProducto: {
+                tipo: "Indicador de Producto",
+                nombre: "Concentración de ventas por producto",
+                descripcion:
+                  "Mide qué porcentaje de las unidades vendidas corresponde al producto más demandado, evidenciando el nivel de dependencia del negocio hacia un solo artículo del catálogo.",
+                formula:
+                  "Concentración % = (Unidades vendidas del producto más vendido / Total de unidades vendidas del periodo) * 100",
+                producto_top: productoTop?.producto || "Sin datos",
+                unidades_producto_top: productoTop?.unidades_vendidas || 0,
+                total_unidades_vendidas: totalUnidades,
+                concentracion_porcentaje: concentracionPorcentaje,
+                detalle: concentracionResult
+              },
+
+              metodoPago: {
+                tipo: "Indicador Comercial",
+                nombre: "Método de pago preferido",
+                descripcion:
+                  "Mide cuál es la forma de pago más utilizada por los clientes al concretar sus compras, permitiendo orientar decisiones sobre convenios con pasarelas de pago o promociones.",
+                formula:
+                  "Método Preferido % = (Nro. de ventas pagadas con el método X / Total de ventas del periodo) * 100",
+                metodo_top: metodoTop?.metodo_pago || "Sin datos",
+                cantidad_metodo_top: metodoTop?.cantidad || 0,
+                total_pagos: totalPagos,
+                metodo_porcentaje: metodoPorcentaje,
+                detalle: metodoPagoResult
+              },
+
+              stockCritico: {
+                tipo: "Indicador de Insumo",
+                nombre: "Nivel de stock crítico",
+                descripcion:
+                  "Mide el porcentaje de productos cuyo stock actual se encuentra en o por debajo del mínimo establecido, alertando sobre el riesgo de desabastecimiento en el catálogo.",
+                formula:
+                  "Stock Crítico % = (Nro. de productos con stock actual <= stock mínimo / Total de productos registrados) * 100",
+                productos_criticos: productosCriticos.length,
+                total_productos: totalProductos,
+                stock_critico_porcentaje: stockCriticoPorcentaje,
+                detalle: stockResult
+              },
+
+              canastaPromedio: {
+                tipo: "Indicador de Proceso",
+                nombre: "Tamaño promedio de la canasta de compra",
+                descripcion:
+                  "Mide el número promedio de productos distintos que un cliente incluye en una sola venta, permitiendo evaluar el comportamiento de compra más allá del monto o la cantidad total de unidades.",
+                formula:
+                  "Canasta Promedio = Σ(Nro. de productos distintos por venta) / Nro. total de ventas del periodo",
+                total_ventas: totalVentasCanasta,
+                suma_productos_distintos: sumaProductosDistintos,
+                canasta_promedio: canastaPromedioValor
+              },
+
+              clientesRecurrentes: {
+                tipo: "Indicador de Resultado",
+                nombre: "Tasa de clientes recurrentes",
+                descripcion:
+                  "Mide el porcentaje de clientes que realizaron más de una compra durante el periodo analizado, permitiendo evaluar el nivel de fidelización de la cartera de clientes.",
+                formula:
+                  "Tasa de Recurrencia % = (Nro. de clientes con más de una compra / Total de clientes distintos del periodo) * 100",
+                clientes_recurrentes: clientesRecurrentes.length,
+                total_clientes: totalClientesDistintos,
+                tasa_recurrencia_porcentaje: tasaRecurrenciaPorcentaje
+              },
+
+              coberturaCatalogo: {
+                tipo: "Indicador de Producto",
+                nombre: "Cobertura de catálogo vendido",
+                descripcion:
+                  "Mide qué porcentaje del catálogo total de productos registró al menos una venta durante el periodo, permitiendo detectar productos sin rotación.",
+                formula:
+                  "Cobertura % = (Nro. de productos distintos vendidos en el periodo / Total de productos registrados) * 100",
+                productos_vendidos_distintos: productosVendidosDistintos,
+                total_productos_catalogo: totalProductos,
+                cobertura_porcentaje: coberturaCatalogoPorcentaje
+              }
+            });
           });
         });
       });
