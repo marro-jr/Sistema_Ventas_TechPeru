@@ -694,7 +694,9 @@ app.get("/ventas-detalle", (req, res) => {
         ON dv.id_producto = p.id_producto
         INNER JOIN pago pa
         ON v.id_venta = pa.id_venta
-        GROUP BY v.id_venta;
+        GROUP BY v.id_venta
+        ORDER BY v.id_venta DESC
+        LIMIT 10;
     `;
 
   db.query(query, (err, results) => {
