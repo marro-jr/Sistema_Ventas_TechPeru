@@ -67,7 +67,7 @@
               </div>
               <div class="col-6">
                 <label class="form-label small text-muted mb-1">Precio (S/)</label>
-                <input type="number" class="form-control" [(ngModel)]="precio" name="precio" />
+                <input type="number" class="form-control" [(ngModel)]="precio" name="precio" min="0" />
               </div>
               <div class="col-6">
                 <label class="form-label small text-muted mb-1">Estado</label>
@@ -78,11 +78,11 @@
               </div>
               <div class="col-6">
                 <label class="form-label small text-muted mb-1">Stock Actual</label>
-                <input type="number" class="form-control" [(ngModel)]="stock_actual" name="stock_actual" />
+                <input type="number" class="form-control" [(ngModel)]="stock_actual" name="stock_actual" min="0" />
               </div>
               <div class="col-6">
                 <label class="form-label small text-muted mb-1">Stock Mínimo</label>
-                <input type="number" class="form-control" [(ngModel)]="stock_minimo" name="stock_minimo" />
+                <input type="number" class="form-control" [(ngModel)]="stock_minimo" name="stock_minimo" min="0" />
               </div>
             </div>
 

@@ -143,7 +143,7 @@
               </div>
               <div class="col-md-2">
                 <label class="form-label small text-muted mb-1">Fecha Pago</label>
-                <input type="date" class="form-control" [(ngModel)]="fecha_pago" name="fecha_pago" />
+                <input type="date" class="form-control" [(ngModel)]="fecha_pago" name="fecha_pago" readonly />
               </div>
             </div>
 
@@ -155,7 +155,7 @@
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small text-muted mb-1">Dcto. Global</label>
-                  <input type="number" class="form-control" [(ngModel)]="descuento" name="descuento" (input)="calcularTotales()" />
+                  <input type="number" class="form-control" [(ngModel)]="descuento" name="descuento" min="0" (input)="calcularTotales()" />
                 </div>
                 <div class="col-md-3">
                   <label class="form-label small text-muted mb-1">Total a Pagar</label>

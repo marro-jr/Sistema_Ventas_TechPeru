@@ -16,7 +16,7 @@ import autoTable from 'jspdf-autotable';
 export class Ventas implements OnInit {
   idVentaEditando: number | null = null;
 
-  fecha = '';
+  fecha = new Date().toISOString().split('T')[0];
   subtotal: number = 0;
   descuento: number = 0;
   total: number = 0;
@@ -33,7 +33,7 @@ export class Ventas implements OnInit {
   monto: number = 0;
   moneda = 'PEN';
   estado_pago = 'Pagado';
-  fecha_pago = '';
+  fecha_pago = new Date().toISOString().split('T')[0];
 
   clientes: any[] = [];
   vendedores: any[] = [];
@@ -211,7 +211,9 @@ export class Ventas implements OnInit {
   }
 
   calcularTotales(): void {
-    this.subtotal = this.carrito.reduce((acc, item) => acc + item.subtotal, 0);
+    if (!this.idVentaEditando) {
+      this.subtotal = this.carrito.reduce((acc, item) => acc + item.subtotal, 0);
+    }
     this.total = Math.max(0, this.subtotal - (this.descuento || 0));
     this.monto = this.total;
   }
@@ -283,7 +285,7 @@ export class Ventas implements OnInit {
   limpiarFormulario(): void {
     this.idVentaEditando = null;
 
-    this.fecha = '';
+    this.fecha = new Date().toISOString().split('T')[0];
     this.subtotal = 0;
     this.descuento = 0;
     this.total = 0;
@@ -300,7 +302,7 @@ export class Ventas implements OnInit {
     this.monto = 0;
     this.moneda = 'PEN';
     this.estado_pago = 'Pagado';
-    this.fecha_pago = '';
+    this.fecha_pago = new Date().toISOString().split('T')[0];
 
     this.cdr.detectChanges();
   }

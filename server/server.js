@@ -17,9 +17,9 @@ app.use(bodyParser.json());
 const puerto = 3000;
 
 const db = mysql.createConnection({
-  host: "127.0.0.1",
+  host: "localhost",
   user: "root",
-  password: "",
+  password: "12345",
   database: "db_tech_peru",
   port: 3306
 });
@@ -823,13 +823,29 @@ app.put("/ventas/:id/eliminar-logico", (req, res) => {
     db.query(queryUpdate, [id], (err) => {
       if (err) return db.rollback(() => res.status(500).json({ error: `Error al cancelar la venta: ${err}` }));
       
-      const insertHistorial = `INSERT INTO HistorialEliminacion (tabla_afectada, id_registro_eliminado, motivo) VALUES ('Venta', ?, 'Venta Cancelada');`;
-      db.query(insertHistorial, [id], (err) => {
-        if (err) return db.rollback(() => res.status(500).json({ error: `Error al guardar en historial: ${err}` }));
-        
-        db.commit((err) => {
-          if (err) return db.rollback(() => res.status(500).json({ error: "Error al hacer commit." }));
-          res.json({ message: "Venta cancelada exitosamente." });
+      const getDetalleQuery = `SELECT id_producto, cantidad FROM detalleventa WHERE id_venta = ?;`;
+      db.query(getDetalleQuery, [id], (err, detalles) => {
+        if (err) return db.rollback(() => res.status(500).json({ error: `Error al consultar detalle para restaurar stock: ${err}` }));
+
+        const restorePromises = detalles.map(prod => {
+          return new Promise((resolve, reject) => {
+            db.query(`UPDATE inventario SET stock_actual = stock_actual + ? WHERE id_producto = ?;`, 
+            [prod.cantidad, prod.id_producto], (err, result) => err ? reject(err) : resolve(result));
+          });
+        });
+
+        Promise.all(restorePromises).then(() => {
+          const insertHistorial = `INSERT INTO HistorialEliminacion (tabla_afectada, id_registro_eliminado, motivo) VALUES ('Venta', ?, 'Venta Cancelada');`;
+          db.query(insertHistorial, [id], (err) => {
+            if (err) return db.rollback(() => res.status(500).json({ error: `Error al guardar en historial: ${err}` }));
+            
+            db.commit((err) => {
+              if (err) return db.rollback(() => res.status(500).json({ error: "Error al hacer commit." }));
+              res.json({ message: "Venta cancelada exitosamente y stock restaurado." });
+            });
+          });
+        }).catch(err => {
+           db.rollback(() => res.status(500).json({ error: `Error al restaurar stock de inventario: ${err}` }));
         });
       });
     });
@@ -1232,7 +1248,7 @@ app.get("/reportes/ventas-por-fechas", (req, res) => {
 app.get("/reportes/indicadores-ventas", (req, res) => {
   const { fecha_inicio, fecha_fin } = req.query;
 
-  let condicionCompletadas = "WHERE v.estado = 'Completado'";
+  let condicionCompletadas = "WHERE v.estado != 'Cancelada'";
   let parametros = [];
 
   if (fecha_inicio && fecha_fin) {
